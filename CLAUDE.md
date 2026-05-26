@@ -1,94 +1,128 @@
 # CLAUDE.md
 
-## Project: cncjs
+## Projekt: cncjs (fork)
 
-CNC machine controller — Node.js/Express backend + React frontend communicating over Socket.IO.
+Web-based UI dla kontrolerów CNC (Grbl, Marlin, Smoothieware, TinyG). Node/Express + Socket.IO + React.
+
+**Fork:** `origin` → `letoliwerbecomeapresident/modern_cncjs`, `upstream` → `cncjs/cncjs`.
+Fork istnieje aby zmodernizować UI i dodać funkcjonalność pod indywidualne potrzeby — nie planujemy zwykłego PR-owania do upstream'u. Synchronizacja z `upstream/master` opcjonalna, świadoma.
 
 **Stack:**
-- Frontend: React 15.6 (class components), Redux, React Router 4, Stylus, Three.js (visualizer)
+- Frontend: React 15.6 (komponenty klasowe), Redux, React Router 4, Stylus, Three.js (visualizer)
 - Backend: Node.js ≥18, Express 4, Socket.IO 2
-- Build: Webpack 5, Babel 7, Yarn
+- Build: Webpack 5, Babel 7, Yarn (zawsze yarn — nigdy npm)
+- Test: Jest 30 (środowisko Node, timeout 10s)
 
-**Key commands:**
+**Komendy:**
 ```
-yarn dev          # dev server (Webpack + Express, concurrent)
-yarn build        # production build
-yarn lint         # ESLint + Stylint + i18n validation
-yarn eslint       # ESLint only (src/**/*.js, src/app/**/*.jsx)
-yarn test         # Jest (Node env, 10s timeout)
+yarn dev          # webpack-dev-server (8080) + cncjs (8000), concurrent
+yarn build        # build produkcyjny
+yarn lint         # eslint + stylint + i18nlint
+yarn eslint       # tylko ESLint (src/**/*.js, src/app/**/*.jsx, scripts/**/*.js)
+yarn test         # Jest z coverage (server-only)
 ```
 
-**Structure:**
-- `src/app/` — React frontend (widgets, containers, styles, i18n)
-- `src/server/` — Express backend, machine controllers (Grbl/Marlin/Smoothie/TinyG)
-- `src/lib/` — Shared logic, 3D viz utilities
-- `grbl-simulator/` — Grbl simulator used in tests
+## Struktura
 
-**Conventions:**
-- JavaScript only — no TypeScript, no `.ts`/`.tsx` files
-- Webpack alias `@app` → `src/app`
-- Stylus for all styles (no CSS modules, no Sass)
-- i18next for all user-facing strings (frontend and server)
-- ESLint extends `trendmicro` config
+- `src/app/` — React frontend
+  - `containers/Workspace/ControlDeck/` — **nowy modern UI** (dodany w forku, 2400+ linii stylów, modularny dashboard z panelami: Axes, Connection, Console, Files, JobStatus, Jog, Laser, StatusMonitors, Visualizer)
+  - `styles/modern-ui.styl` — globalne style modern UI forka
+  - `widgets/` — klasyczne widgety (Axes, Console, Visualizer, kontrolery)
+  - `i18n/` — 17 języków, klucz `resource.json`
+- `src/server/` — Express, kontrolery CNC w `controllers/{Grbl,Marlin,Smoothie,TinyG}/`
+- `src/lib/` — wspólna logika, narzędzia 3D
+- `grbl-simulator/` — symulator Grbl używany w testach
+- `src/electron-app/` — wrapper Electron
+
+Webpack alias: `@app` → `src/app`.
+
+## Konwencje techniczne
+
+- **Tylko JavaScript** — brak TypeScript, brak `.ts`/`.tsx`.
+- **Stylus** dla wszystkich stylów (brak CSS modules, brak Sass).
+- **i18next** dla wszystkich stringów user-facing (frontend i serwer).
+- ESLint extends `eslint-config-trendmicro`.
+- Komponenty React: klasowe (React 15.6, brak hooków).
+- Testy: `__tests__/` obok testowanego kodu, plik `*.test.js`. Coverage tylko dla `src/server/**`.
+- Jest `testMatch`: `src/server/**/__tests__/**/*.test.js` + `grbl-simulator/__tests__/**/*.test.js`.
+
+## Konwencje commitów
+
+Konwencjonalne commity (`<type>(<scope>): <opis>`). Najczęstsze typy: `feat`, `fix`, `chore`, `refactor`, `docs`, `build`, `ci`, `test`.
+
+**Scope'y używane w projekcie:**
+- Kontrolery: `(Grbl)`, `(Marlin)`, `(TinyG)`, `(Smoothie)`, `(grbl-simulator)`
+- UI: `(widgets/Axes)`, `(widgets/*)`, `(app)`
+- i18n: `(l10n)`, `(i18n)`
+- Zależności: `(deps)`, `(deps-dev)`
+- Release: `(release)`
+
+**PR reference:** gdy commit pochodzi z mergowanego PR — dopisz `(#NUMER)` na końcu opisu. Dla zwykłych commitów lokalnych w forku — pomiń.
+
+Przykłady:
+```
+feat(widgets/Axes): replace GridSystem with flexbox in MDI (#955)
+fix(grbl): regression in Grbl-Mega connection handling
+chore(deps): bump @babel/runtime from 7.20.13 to 7.27.6
+```
+
+## i18n — gdy dotykasz UI
+
+1. Dodaj klucz do `src/app/i18n/en/resource.json`.
+2. `yarn i18nlint` waliduje JSON (uruchamiane przez `yarn lint`).
+3. Pozostałe języki — można zostawić puste dla późniejszego tłumaczenia, ale niech struktura kluczy będzie spójna.
+
+## Pakiety
+
+- **Tylko `yarn`** (jest `yarn.lock`, brak `package-lock.json`).
+- `package.json` i `src/package.json` aktualizowane razem przez `node scripts/package-sync.js`.
+- Changesets dla wersjonowania (`.changeset/`, `yarn ci-version`, `yarn ci-publish`).
+
+## Pre-push hook
+
+`pre-push` uruchamia `eslint-debug`. Jeśli ESLint nie przechodzi — popraw, nie omijaj.
 
 ---
 
-## Guidelines
+## Wytyczne dla agenta
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**Tradeoff:** te wytyczne są ostrożniejsze niż domyślne — dla trywialnych zadań stosuj zdrowy rozsądek.
 
-## 1. Think Before Coding
+### 1. Myśl zanim kodujesz
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+- Wypowiedz swoje założenia. Jeśli niepewny — pytaj.
+- Jeśli istnieje kilka interpretacji — przedstaw je, nie wybieraj po cichu.
+- Jeśli istnieje prostsze podejście — powiedz. Push back kiedy uzasadnione.
+- Jeśli coś jest niejasne — zatrzymaj się, nazwij to, zapytaj.
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+### 2. Prostota najpierw
 
-## 2. Simplicity First
+- Minimum kodu rozwiązujący problem. Nic spekulacyjnego.
+- Brak funkcji ponad to, o co poproszono.
+- Brak abstrakcji dla jednorazowego kodu.
+- Brak „elastyczności" o którą nie proszono.
+- Brak obsługi błędów dla scenariuszy które nie mogą się zdarzyć.
+- Jeśli napiszesz 200 linii a wystarczy 50 — przepisz.
 
-**Minimum code that solves the problem. Nothing speculative.**
+### 3. Chirurgiczne zmiany
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+- Dotykaj tylko tego co musisz. Czyść tylko swój własny bałagan.
+- Nie „ulepszaj" sąsiedniego kodu, komentarzy ani formatowania.
+- Nie refaktoryzuj rzeczy które nie są zepsute.
+- Trzymaj istniejący styl, nawet jeśli osobiście wolałbyś inaczej.
+- Jeśli zauważysz niezwiązany dead code — wspomnij, nie usuwaj.
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+Test: każda zmieniona linia powinna prowadzić wprost do prośby użytkownika.
 
-## 3. Surgical Changes
+### 4. Cel-driven execution
 
-**Touch only what you must. Clean up only your own mess.**
+Zamień zadania w weryfikowalne cele:
+- „Dodaj walidację" → „Napisz testy dla nieprawidłowych inputów, przejdź je".
+- „Napraw bug" → „Napisz test reprodukujący, przejdź go".
+- „Refaktoryzuj X" → „Upewnij się że testy przechodzą przed i po".
 
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+Dla zadań wieloetapowych — krótki plan z krokami i kryteriami weryfikacji.
 
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+### 5. Język komunikacji
 
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+Domyślnie po polsku (zgodnie z ustawieniem użytkownika). Identyfikatory w kodzie i wiadomości commitów — po angielsku.

@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn:*)",
+      "Bash(yarn install)",
+      "Bash(yarn add:*)",
+      "Bash(yarn remove:*)",
+      "Bash(yarn upgrade:*)",
+      "Bash(yarn dev)",
+      "Bash(yarn build:*)",
+      "Bash(yarn lint)",
+      "Bash(yarn eslint)",
+      "Bash(yarn stylint)",
+      "Bash(yarn i18nlint)",
+      "Bash(yarn test:*)",
+      "Bash(yarn test)",
+      "Bash(node:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(git remote:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash list)",
+      "Bash(git stash show:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(jq:*)",
+      "Bash(file:*)",
+      "Bash(pwd)",
+      "Bash(which:*)",
+      "Bash(jest:*)",
+      "Bash(npx jest:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git branch -D:*)"
+    ]
+  }
+}
