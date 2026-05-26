@@ -1,0 +1,35 @@
+[Unit]
+Description=CNCjs
+Documentation=https://github.com/cncjs/cncjs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi
+
+# Heap cap dopasowany do Pi Zero W (512 MB RAM total).
+# Pi 3B+ (1 GB): zwieksz do 512. Pi 4 (>=2 GB): mozna usunac caly NODE_OPTIONS.
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=256
+
+# Globalna instalacja (yarn global add cncjs / npm i -g cncjs):
+ExecStart=/usr/bin/env cncjs --port 8000
+# Wariant z repo (git clone do /home/pi/cncjs):
+# ExecStart=/usr/bin/node /home/pi/cncjs/bin/cncjs --port 8000
+
+Restart=on-failure
+RestartSec=5
+
+# Hard limit cgroup — zatrzymaj proces zanim OOM-killer zabije system.
+# 384M dla Pi Zero W (512 MB total), 768M dla 3B+, pomin dla Pi 4.
+MemoryMax=384M
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cncjs
+
+[Install]
+WantedBy=multi-user.target
