@@ -23,7 +23,7 @@ import ModularDashboard from './components/ModularDashboard';
 import SideNav from './components/SideNav';
 import StatusMonitors from './components/StatusMonitors';
 import TopBar from './components/TopBar';
-import VisualizerPanel from './components/VisualizerPanel';
+import VisualizerPanel from './components/LazyVisualizerPanel';
 import styles from './control-deck.styl';
 
 const DEFAULT_BAUDRATES = [

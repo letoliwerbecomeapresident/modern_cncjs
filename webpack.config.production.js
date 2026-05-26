@@ -41,6 +41,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist/cncjs/app'),
     filename: '[name].[contenthash].bundle.js',
+    chunkFilename: '[name].[contenthash].bundle.js',
     publicPath: publicPath
   },
   module: {

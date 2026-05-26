@@ -4,7 +4,9 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-26, P2.2)
+## Status realizacji (ostatnia aktualizacja: 2026-05-26, decyzje + P1.1 in progress)
+
+> **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
 ### ✅ Zrobione
 
@@ -14,6 +16,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 - **P0.4** — `CompressionPlugin` (gzip + brotli q=11) w webpack + `express-static-gzip` w `src/server/app.js` (preferencja `br` → `gz` → raw). Dodane: `compression-webpack-plugin` (dev), `express-static-gzip` (runtime).
 - **P2.1** — `moment` → `dayjs` w 8 plikach + bootstrap z pluginami w `src/app/lib/dayjs.js` (`duration`, `isSameOrAfter`, `isSameOrBefore`, `localizedFormat`). `bundle-loader!moment/locale/*` zastąpione `import('dayjs/locale/${locale}.js')`. `ContextReplacementPlugin` ograniczony do locale z `build.config.languages`. `moment` + `bundle-loader` usunięte z deps.
 - **P2.2** — `import _ from 'lodash'` cherry-pickowany w 12 plikach `src/app/**` na `import get from 'lodash/get'` itp. Plugin `babel-plugin-lodash` zostaje (`src/server/**` nadal go używa). **Bundle output bez zmian** — plugin już wcześniej cherry-pickował automatycznie. Korzyść: deterministyczność, audytowalność, gotowość pod usunięcie pluginu.
+- **P1.1** — Lazy-load VisualizerPanel (ControlDeck) przez `LazyVisualizerPanel.jsx` z dynamic `import(/* webpackChunkName: "visualizer" */ './VisualizerPanel')`. React 15.6 — ręczny class wrapper. `webpack.config.production.js`: dodane `output.chunkFilename: '[name].[contenthash].bundle.js'` (async chunki dostają contenthash + są precompresowane brotli/gzip). Three.js (`vendor.three` 518 KB raw / 105 KB brotli) i kod Visualizer (`visualizer.<hash>.bundle.js` 199 KB raw / 45 KB brotli) **przesunięte z initial do async**.
 - **P2.3** — `jimp` usunięty z deps (nieużywany).
 - **P4.3** — Google Analytics wyłączone (`trackingId: ''` w `build.config.js` + guard w `src/app/index.jsx:104`).
 - **P5.2** — `immutable: true` w `serveStatic` opcjach (`src/server/app.js`).
@@ -42,23 +45,39 @@ Po P2.2 (lodash cherry-pick frontu):
 - Initial load 485 KB brotli — bez zmian
 - `babel-plugin-lodash` już wcześniej robił automatyczne cherry-picki, więc po stronie KB zero. Pozostaje higiena: importy jawne, audyt przez `grep`, możliwość usunięcia plugin'u po analogicznym cherry-picku w `src/server/**` (out of scope).
 
-### ⏭️ Do zrobienia w kolejności (z rekomendacji na dole)
+Po P1.1 (lazy VisualizerPanel):
+- **Initial brotli: 354 KB** (vs 485 KB po P2.2) = **−27%** (kumulatywnie vs baseline 651 KB gzip: **−46% w brotli, −32% w gzip**)
+- Initial gzip: 446 KB
+- Initial chunki (8 plików JS): runtime 1.9 KB / vendor.react 39 KB / vendor.dayjs 8.3 KB / vendor.lodash 12 KB / vendor.trendmicro 37 KB / vendor.i18next 12 KB / **vendor.misc 191 KB** / main 53 KB (wszystko brotli). `vendor.misc` to teraz największy ciężar — kandydat do podziału w przyszłości.
+- Async (ładowane przy pierwszym mount VisualizerPanel): vendor.three 105 KB brotli + visualizer 45 KB brotli = **151 KB brotli odłożone z initial**
+- Drugi load (cache vendorów): teoretycznie tylko `main` + `runtime` zmieniają hashe → ~55 KB brotli
 
-- **P1.1** — Lazy-load Visualizera. **Zablokowane** otwartym pytaniem 1: czy ControlDeck zastępuje klasyczny Workspace?
-- **P4.1 + P4.2** — Pi-side systemd unit + `NODE_OPTIONS=--max-old-space-size=512`. Plik unitu w `OPTIMIZATION.md` sekcja 4.2.
-- **P5.1** — Service Worker (workbox).
-- **P1.3** — Kasacja klasycznych widgetów. **Zablokowane** pytaniem 1.
-- **P1.4** — Selektywne importy Three.js. Wymaga bumpa `three` z ~0.103 na >=0.150 — średnie ryzyko (forki w `src/app/lib/three/`).
-- **P2.4** — Font Awesome subset.
-- **P2.5** — Wyrzucenie xterm (zależy od pytania 3).
-- **P2.6** — Audyt nakładających się stacków UI (bootstrap/react-bootstrap/styled-components/@trendmicro).
-- **P2.7** — Okrojenie liczby języków (zależy od pytania 2).
-- **P3** (PureComponent / throttle / virtual list / console buffer) — runtime React, pomiar najpierw.
-- **P4.4 / P4.5 / P4.6** — HTTP/2, kasacja endpointów, tmpfs.
+### ⏭️ Do zrobienia w kolejności (rekomendacja dla Pi Zero W)
 
-### ❓ Otwarte pytania blokujące dalsze kroki
+Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i parsowanie w przeglądarce (front), potem runtime Node.
 
-Patrz sekcja „Otwarte pytania do decyzji" na końcu tego dokumentu. Bez odpowiedzi na pyt. 1–3 nie ruszamy P1.3 / P2.5 / P2.7.
+1. ~~**P1.1** — Lazy-load VisualizerPanel (ControlDeck).~~ **Zrobione 2026-05-26** (−131 KB brotli z initial).
+2. **Cleanup Workspace.jsx** (nowy) — `Workspace.jsx` renderuje już tylko `<ControlDeck />`, ale trzyma ~250 linii nieużywanej logiki widget management (widgetManager imports, primary/secondary containers, sortableGroup, updateWidgetsFor*, resizeDefaultContainer, pubsub publish). Higiena, mały zysk JS, otwiera drogę do P1.3.
+3. **P1.3** — Kasacja klasycznych widgetów nieużywanych przez ControlDeck. Odblokowane. ControlDeck używa z `widgets/`: `Console`, `Connection`, `Visualizer`, `WidgetConfig`. Do kasacji (po weryfikacji że nikt inny nie importuje): **Autolevel, Axes, Custom, GCode, Grbl, Laser, Macro, Marlin, Probe, Smoothie, Spindle, TinyG, Tool, Webcam** + `WidgetManager/`, `PrimaryWidgets.jsx`, `SecondaryWidgets.jsx`, `DefaultWidgets.jsx`. Realnie 100–300 KB raw.
+4. **P4.1 + P4.2** — Pi-side systemd unit + `NODE_OPTIONS=--max-old-space-size=256` (dla Zero W zamiast 512). Sekcja 4.2.
+5. **P3.2 + P3.4** — Throttle eventów Socket.IO (10 Hz) + bufor konsoli (2000 linii). **Krytyczne dla Pi Zero W** — single-core ARMv6 nie wybacza spam'u rerenderów.
+6. **P2.5** — Wyrzucenie xterm. Wymaga przepisania `widgets/Console/Terminal.jsx` (używanego przez ControlDeck.ConsolePanel) na lekki własny terminal lub usunięcie ConsolePanel.
+7. **P5.1** — Service Worker (workbox). Drugi load <100 ms, offline mode.
+8. **P4.6** — tmpfs dla `/var/log/cncjs/` i `/tmp` (oszczędność cykli zapisu microSD).
+9. **P2.4** — Font Awesome subset / migracja na `react-icons`. −~1.5 MB z `dist/` (assety).
+10. **P1.4** — Selektywne importy Three.js + bump `three` ~0.103 → >=0.150. Średnie ryzyko (forki w `src/app/lib/three/`, `CombinedCamera` do przepisania).
+11. **P4.5** — Kasacja nieużywanych endpointów serwera (auth/users/events jeśli single-user warsztat). Dla Pi Zero W warta rozważenia.
+12. **P2.6** — Audyt nakładających się stacków UI (bootstrap/react-bootstrap/styled-components/@trendmicro). Duży projekt.
+13. **P3.1 / P3.3** — PureComponent audit, virtualizacja list (jeśli FilesPanel rośnie).
+14. **P4.4** — HTTP/2 (jeśli front przez nginx).
+
+### ✅ Decyzje (2026-05-26)
+
+- **Pyt. 1** — ControlDeck **zastępuje** klasyczny Workspace (kierunek docelowy). Klasyczne widgety i logika widget management do kasacji. Odblokowuje P1.1, P1.3, P2.5.
+- **Pyt. 2** — Zostawiamy **wszystkie 17 języków** w buildzie. P2.7 odpada. (i18n ładuje on-demand, więc initial load tego nie odczuwa.)
+- **Pyt. 3** — xterm **do wyrzucenia**, ale wymaga przepisania `widgets/Console/Terminal.jsx` bo ControlDeck.ConsolePanel wciąż go opakowuje. Plan: P2.5 po cleanupie widgetów.
+- **Pyt. 4** — Target: **Pi Zero W gen 1** (ARMv6, 512 MB RAM). Wszystkie optymalizacje P3/P4 są must-have, nie opcjonalne.
+- **Pyt. 5** — Brak decyzji, ale przyjmujemy: UI oglądane z laptopa/tabletu przez LAN (Pi tylko serwuje). Jeśli to się zmieni (Chromium na Pi) — wszystkie front-optymalizacje stają się jeszcze krytyczniejsze.
 
 ### 🔧 Jak weryfikować że P0 nadal działa
 
@@ -642,10 +661,6 @@ Reszta (P1.3, P1.4, P2.4, P2.6) to większe projekty — rób je gdy masz dłuż
 
 ## Otwarte pytania do decyzji
 
-Te wymagają Twojej decyzji zanim zaczniemy:
+> **Status:** Pyt. 1–4 odpowiedziane 2026-05-26 — patrz sekcja **„Decyzje" w nagłówku statusu**. Pyt. 5 otwarte ale niekrytyczne.
 
-1. Czy **ControlDeck** docelowo zastępuje cały klasyczny Workspace? (Wpływa na P1.3 — czy kasujemy stare widgety.)
-2. Czy używasz **wielu języków UI** czy tylko PL/EN? (P2.7.)
-3. Czy potrzebujesz **klasycznego widgetu Console** (xterm) skoro masz `ConsolePanel` w ControlDeck? (P2.5.)
-4. Jaki **target Pi** — 3B+/4/5/Zero 2W? (Wpływa na to ile agresywnie ciąć — Pi 5 z 8 GB udźwignie więcej.)
-5. Czy UI jest oglądane z **laptopa/tabletu/telefonu** czy z displayu podłączonego do Pi (Chromium na Pi)? (Drugie = front też obciąża Pi CPU, wszystkie optymalizacje frontu istotniejsze.)
+5. Czy UI jest oglądane z **laptopa/tabletu/telefonu** czy z displayu podłączonego do Pi (Chromium na Pi)? Drugie = front też obciąża Pi CPU, wszystkie optymalizacje frontu istotniejsze.
