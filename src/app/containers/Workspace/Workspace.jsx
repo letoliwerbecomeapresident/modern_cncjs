@@ -1,20 +1,9 @@
-import difference from 'lodash/difference';
 import includes from 'lodash/includes';
-import pick from 'lodash/pick';
-import pullAll from 'lodash/pullAll';
-import size from 'lodash/size';
-import throttle from 'lodash/throttle';
 import classNames from 'classnames';
-import pubsub from 'pubsub-js';
 import React, { PureComponent } from 'react';
-import ReactDOM from 'react-dom';
 import { withRouter } from 'react-router-dom';
-import api from 'app/api';
 import controller from 'app/lib/controller';
 import i18n from 'app/lib/i18n';
-import log from 'app/lib/log';
-import store from 'app/store';
-import * as widgetManager from './WidgetManager';
 import FeederPaused from './modals/FeederPaused';
 import FeederWait from './modals/FeederWait';
 import ServerDisconnected from './modals/ServerDisconnected';
@@ -29,85 +18,36 @@ import {
 
 const WAIT = '%wait';
 
-const startWaiting = () => {
-  // Adds the 'wait' class to <html>
-  const root = document.documentElement;
-  root.classList.add('wait');
-};
-const stopWaiting = () => {
-  // Adds the 'wait' class to <html>
-  const root = document.documentElement;
-  root.classList.remove('wait');
-};
-
 class Workspace extends PureComponent {
     static propTypes = {
       ...withRouter.propTypes
     };
 
     state = {
-      mounted: false,
-      port: '',
       modal: {
         name: MODAL_NONE,
         params: {}
-      },
-      isDraggingFile: false,
-      isDraggingWidget: false,
-      isUploading: false,
-      showPrimaryContainer: store.get('workspace.container.primary.show'),
-      showSecondaryContainer: store.get('workspace.container.secondary.show'),
-      inactiveCount: size(widgetManager.getInactiveWidgets())
+      }
     };
 
     action = {
       openModal: (name = MODAL_NONE, params = {}) => {
-        this.setState(state => ({
+        this.setState({
           modal: {
             name: name,
             params: params
           }
-        }));
+        });
       },
       closeModal: () => {
-        this.setState(state => ({
+        this.setState({
           modal: {
             name: MODAL_NONE,
             params: {}
           }
-        }));
-      },
-      updateModalParams: (params = {}) => {
-        this.setState(state => ({
-          modal: {
-            ...state.modal,
-            params: {
-              ...state.modal.params,
-              ...params
-            }
-          }
-        }));
+        });
       }
     };
-
-    sortableGroup = {
-      primary: null,
-      secondary: null
-    };
-
-    primaryContainer = null;
-
-    secondaryContainer = null;
-
-    primaryToggler = null;
-
-    secondaryToggler = null;
-
-    primaryWidgets = null;
-
-    secondaryWidgets = null;
-
-    defaultContainer = null;
 
     controllerEvents = {
       'connect': () => {
@@ -130,13 +70,6 @@ class Workspace extends PureComponent {
         } else {
           this.action.openModal(MODAL_SERVER_DISCONNECTED);
         }
-      },
-      'serialport:open': (options) => {
-        const { port } = options;
-        this.setState({ port: port });
-      },
-      'serialport:close': (options) => {
-        this.setState({ port: '' });
       },
       'feeder:status': (status) => {
         const { modal } = this.state;
@@ -184,200 +117,12 @@ class Workspace extends PureComponent {
       }
     };
 
-    widgetEventHandler = {
-      onForkWidget: (widgetId) => {
-        // TODO
-      },
-      onRemoveWidget: (widgetId) => {
-        const inactiveWidgets = widgetManager.getInactiveWidgets();
-        this.setState({ inactiveCount: inactiveWidgets.length });
-      },
-      onDragStart: () => {
-        const { isDraggingWidget } = this.state;
-        if (!isDraggingWidget) {
-          this.setState({ isDraggingWidget: true });
-        }
-      },
-      onDragEnd: () => {
-        const { isDraggingWidget } = this.state;
-        if (isDraggingWidget) {
-          this.setState({ isDraggingWidget: false });
-        }
-      }
-    };
-
-    togglePrimaryContainer = () => {
-      const { showPrimaryContainer } = this.state;
-      this.setState({ showPrimaryContainer: !showPrimaryContainer });
-
-      // Publish a 'resize' event
-      pubsub.publish('resize'); // Also see "widgets/Visualizer"
-    };
-
-    toggleSecondaryContainer = () => {
-      const { showSecondaryContainer } = this.state;
-      this.setState({ showSecondaryContainer: !showSecondaryContainer });
-
-      // Publish a 'resize' event
-      pubsub.publish('resize'); // Also see "widgets/Visualizer"
-    };
-
-    resizeDefaultContainer = () => {
-      const sidebar = document.querySelector('#sidebar');
-      const primaryContainer = ReactDOM.findDOMNode(this.primaryContainer);
-      const secondaryContainer = ReactDOM.findDOMNode(this.secondaryContainer);
-      const primaryToggler = ReactDOM.findDOMNode(this.primaryToggler);
-      const secondaryToggler = ReactDOM.findDOMNode(this.secondaryToggler);
-      const defaultContainer = ReactDOM.findDOMNode(this.defaultContainer);
-      const { showPrimaryContainer, showSecondaryContainer } = this.state;
-
-      { // Mobile-Friendly View
-        const { location } = this.props;
-        const disableHorizontalScroll = !(showPrimaryContainer && showSecondaryContainer);
-
-        if (location.pathname === '/workspace' && disableHorizontalScroll) {
-          // Disable horizontal scroll
-          document.body.scrollLeft = 0;
-          document.body.style.overflowX = 'hidden';
-        } else {
-          // Enable horizontal scroll
-          document.body.style.overflowX = '';
-        }
-      }
-
-      if (showPrimaryContainer) {
-        defaultContainer.style.left = primaryContainer.offsetWidth + sidebar.offsetWidth + 'px';
-      } else {
-        defaultContainer.style.left = primaryToggler.offsetWidth + sidebar.offsetWidth + 'px';
-      }
-
-      if (showSecondaryContainer) {
-        defaultContainer.style.right = secondaryContainer.offsetWidth + 'px';
-      } else {
-        defaultContainer.style.right = secondaryToggler.offsetWidth + 'px';
-      }
-
-      // Publish a 'resize' event
-      pubsub.publish('resize'); // Also see "widgets/Visualizer"
-    };
-
-    onDrop = (files) => {
-      const { port } = this.state;
-
-      if (!port) {
-        return;
-      }
-
-      let file = files[0];
-      let reader = new FileReader();
-
-      reader.onloadend = (event) => {
-        const { result, error } = event.target;
-
-        if (error) {
-          log.error(error);
-          return;
-        }
-
-        log.debug('FileReader:', pick(file, [
-          'lastModified',
-          'lastModifiedDate',
-          'meta',
-          'name',
-          'size',
-          'type'
-        ]));
-
-        startWaiting();
-        this.setState({ isUploading: true });
-
-        const name = file.name;
-        const gcode = result;
-
-        api.loadGCode({ port, name, gcode })
-          .then((res) => {
-            const { name = '', gcode = '' } = { ...res.body };
-            pubsub.publish('gcode:load', { name, gcode });
-          })
-          .catch((res) => {
-            log.error('Failed to upload G-code file');
-          })
-          .then(() => {
-            stopWaiting();
-            this.setState({ isUploading: false });
-          });
-      };
-
-      try {
-        reader.readAsText(file);
-      } catch (err) {
-        // Ignore error
-      }
-    };
-
-    updateWidgetsForPrimaryContainer = () => {
-      widgetManager.show((activeWidgets, inactiveWidgets) => {
-        const widgets = Object.keys(store.get('widgets', {}))
-          .filter(widgetId => {
-            // e.g. "webcam" or "webcam:d8e6352f-80a9-475f-a4f5-3e9197a48a23"
-            const name = widgetId.split(':')[0];
-            return includes(activeWidgets, name);
-          });
-
-        const defaultWidgets = store.get('workspace.container.default.widgets');
-        const sortableWidgets = difference(widgets, defaultWidgets);
-        let primaryWidgets = store.get('workspace.container.primary.widgets');
-        let secondaryWidgets = store.get('workspace.container.secondary.widgets');
-
-        primaryWidgets = sortableWidgets.slice();
-        pullAll(primaryWidgets, secondaryWidgets);
-        pubsub.publish('updatePrimaryWidgets', primaryWidgets);
-
-        secondaryWidgets = sortableWidgets.slice();
-        pullAll(secondaryWidgets, primaryWidgets);
-        pubsub.publish('updateSecondaryWidgets', secondaryWidgets);
-
-        // Update inactive count
-        this.setState({ inactiveCount: size(inactiveWidgets) });
-      });
-    };
-
-    updateWidgetsForSecondaryContainer = () => {
-      widgetManager.show((activeWidgets, inactiveWidgets) => {
-        const widgets = Object.keys(store.get('widgets', {}))
-          .filter(widgetId => {
-            // e.g. "webcam" or "webcam:d8e6352f-80a9-475f-a4f5-3e9197a48a23"
-            const name = widgetId.split(':')[0];
-            return includes(activeWidgets, name);
-          });
-
-        const defaultWidgets = store.get('workspace.container.default.widgets');
-        const sortableWidgets = difference(widgets, defaultWidgets);
-        let primaryWidgets = store.get('workspace.container.primary.widgets');
-        let secondaryWidgets = store.get('workspace.container.secondary.widgets');
-
-        secondaryWidgets = sortableWidgets.slice();
-        pullAll(secondaryWidgets, primaryWidgets);
-        pubsub.publish('updateSecondaryWidgets', secondaryWidgets);
-
-        primaryWidgets = sortableWidgets.slice();
-        pullAll(primaryWidgets, secondaryWidgets);
-        pubsub.publish('updatePrimaryWidgets', primaryWidgets);
-
-        // Update inactive count
-        this.setState({ inactiveCount: size(inactiveWidgets) });
-      });
-    };
-
     componentDidMount() {
       this.addControllerEvents();
     }
 
     componentWillUnmount() {
       this.removeControllerEvents();
-    }
-
-    componentDidUpdate() {
     }
 
     addControllerEvents() {
@@ -394,23 +139,9 @@ class Workspace extends PureComponent {
       });
     }
 
-    addResizeEventListener() {
-      this.onResizeThrottled = throttle(this.resizeDefaultContainer, 50);
-      window.addEventListener('resize', this.onResizeThrottled);
-    }
-
-    removeResizeEventListener() {
-      window.removeEventListener('resize', this.onResizeThrottled);
-      this.onResizeThrottled = null;
-    }
-
     render() {
       const { style, className } = this.props;
-      const {
-        port,
-        modal,
-        isDraggingFile
-      } = this.state;
+      const { modal } = this.state;
 
       return (
         <div style={style} className={classNames(className, styles.workspace)}>
@@ -430,16 +161,6 @@ class Workspace extends PureComponent {
           )}
           {modal.name === MODAL_SERVER_DISCONNECTED &&
             <ServerDisconnected />}
-          <div
-            className={classNames(
-              styles.dropzoneOverlay,
-              { [styles.hidden]: !(port && isDraggingFile) }
-            )}
-          >
-            <div className={styles.textBlock}>
-              {i18n._('Drop G-code file here')}
-            </div>
-          </div>
           <ControlDeck />
         </div>
       );
