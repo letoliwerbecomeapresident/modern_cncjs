@@ -1,6 +1,15 @@
 import { ensureArray } from 'ensure-type';
+import throttle from 'lodash/throttle';
 
 const noop = () => {};
+
+// Hot Socket.IO events that fire at controller status-report cadence
+// (Grbl/Marlin/TinyG can push 20–30 Hz on busy jobs). Cap dispatch to 10 Hz
+// so React panels and the visualizer don't drown — Pi Zero W headless / tablet
+// HMI cannot keep up with per-tick rerenders. Internal `this.state` still
+// updates immediately so synchronous `controller.state` reads see latest data.
+const THROTTLED_EVENTS = ['controller:state', 'sender:status'];
+const THROTTLE_MS = 100;
 
 class Controller {
     io = null;
@@ -90,6 +99,9 @@ class Controller {
         state: 'idle' // running|paused|idle
     };
 
+    // Per-event throttled dispatchers, lazily created in `connect()`.
+    _throttledDispatchers = {};
+
     // @param {object} io The socket.io-client module.
     constructor(io) {
         if (!io) {
@@ -114,6 +126,24 @@ class Controller {
 
         this.socket && this.socket.destroy();
         this.socket = this.io.connect(host, options);
+
+        // Rebuild throttled dispatchers per connection so stale `socket`
+        // closures from a previous session can't fire after reconnect.
+        Object.keys(this._throttledDispatchers).forEach((eventName) => {
+            const fn = this._throttledDispatchers[eventName];
+            if (fn && typeof fn.cancel === 'function') {
+                fn.cancel();
+            }
+        });
+        this._throttledDispatchers = {};
+        THROTTLED_EVENTS.forEach((eventName) => {
+            this._throttledDispatchers[eventName] = throttle((args) => {
+                const listeners = ensureArray(this.listeners[eventName]);
+                listeners.forEach(listener => {
+                    listener(...args);
+                });
+            }, THROTTLE_MS, { leading: true, trailing: true });
+        });
 
         Object.keys(this.listeners).forEach((eventName) => {
             if (!this.socket) {
@@ -145,6 +175,14 @@ class Controller {
                     this.state = { ...args[1] };
                 }
 
+                const throttled = this._throttledDispatchers[eventName];
+                if (throttled) {
+                    // Internal state above was updated synchronously; only
+                    // listener fan-out is rate-limited.
+                    throttled(args);
+                    return;
+                }
+
                 const listeners = ensureArray(this.listeners[eventName]);
                 listeners.forEach(listener => {
                     listener(...args);
@@ -173,6 +211,13 @@ class Controller {
     disconnect() {
         this.socket && this.socket.destroy();
         this.socket = null;
+        Object.keys(this._throttledDispatchers).forEach((eventName) => {
+            const fn = this._throttledDispatchers[eventName];
+            if (fn && typeof fn.cancel === 'function') {
+                fn.cancel();
+            }
+        });
+        this._throttledDispatchers = {};
     }
     // Adds the `listener` function to the end of the listeners array for the event named `eventName`.
     // @param {string} eventName The name of the event.
