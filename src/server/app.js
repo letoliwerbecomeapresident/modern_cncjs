@@ -17,8 +17,8 @@ import i18nextBackend from 'i18next-fs-backend';
 import jwt from 'jsonwebtoken';
 import methodOverride from 'method-override';
 import morgan from 'morgan';
+import expressStaticGzip from 'express-static-gzip';
 import favicon from 'serve-favicon';
-import serveStatic from 'serve-static';
 import sessionFileStore from 'session-file-store';
 import _get from 'lodash/get';
 import _noop from 'lodash/noop';
@@ -193,8 +193,13 @@ const appMain = () => {
     asset.routes.forEach((assetRoute) => {
       const route = urljoin(settings.route || '/', assetRoute || '');
       log.debug('> route=%s', name, route);
-      app.use(route, serveStatic(asset.path, {
-        maxAge: asset.maxAge
+      app.use(route, expressStaticGzip(asset.path, {
+        enableBrotli: true,
+        orderPreference: ['br', 'gz'],
+        serveStatic: {
+          maxAge: asset.maxAge,
+          immutable: asset.maxAge > 0,
+        },
       }));
     });
   });

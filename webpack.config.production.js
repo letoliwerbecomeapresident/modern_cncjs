@@ -2,10 +2,13 @@ const crypto = require('crypto');
 const path = require('path');
 const boolean = require('boolean');
 const dotenv = require('dotenv');
-const ESLintPlugin = require('eslint-webpack-plugin');
+const zlib = require('zlib');
+const CompressionPlugin = require('compression-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const without = require('lodash/without');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
 const babelConfig = require('./babel.config');
 const buildConfig = require('./build.config');
@@ -29,7 +32,7 @@ module.exports = {
   cache: true,
   target: 'web',
   context: path.resolve(__dirname, 'src/app'),
-  devtool: 'cheap-module-source-map',
+  devtool: false,
   entry: {
     main: [
       path.resolve(__dirname, 'src/app/index.jsx')
@@ -130,6 +133,65 @@ module.exports = {
   },
   optimization: {
     minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            passes: 2,
+          },
+          format: {
+            comments: false,
+          },
+        },
+        extractComments: false,
+      }),
+      new CssMinimizerPlugin(),
+    ],
+    runtimeChunk: 'single',
+    splitChunks: {
+      chunks: 'all',
+      maxInitialRequests: 25,
+      minSize: 20000,
+      cacheGroups: {
+        three: {
+          test: /[\\/]node_modules[\\/]three[\\/]/,
+          name: 'vendor.three',
+          priority: 30,
+        },
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|react-redux|redux|react-router-redux)[\\/]/,
+          name: 'vendor.react',
+          priority: 25,
+        },
+        trendmicro: {
+          test: /[\\/]node_modules[\\/]@trendmicro[\\/]/,
+          name: 'vendor.trendmicro',
+          priority: 20,
+        },
+        lodash: {
+          test: /[\\/]node_modules[\\/]lodash[\\/]/,
+          name: 'vendor.lodash',
+          priority: 20,
+        },
+        moment: {
+          test: /[\\/]node_modules[\\/]moment[\\/]/,
+          name: 'vendor.moment',
+          priority: 20,
+        },
+        i18next: {
+          test: /[\\/]node_modules[\\/](i18next|react-i18next)[\\/]/,
+          name: 'vendor.i18next',
+          priority: 20,
+        },
+        vendors: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendor.misc',
+          priority: 10,
+        },
+      },
+    },
   },
   plugins: [
     new webpack.DefinePlugin({
@@ -144,12 +206,6 @@ module.exports = {
       /moment[\/\\]locale$/,
       new RegExp('^\./(' + without(buildConfig.languages, 'en').join('|') + ')$')
     ),
-    new ESLintPlugin({
-      extensions: ['js', 'jsx'],
-      exclude: [
-        '/node_modules/',
-      ],
-    }),
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',
       chunkFilename: '[id].[contenthash].css',
@@ -157,7 +213,32 @@ module.exports = {
     new HtmlWebpackPlugin({
       filename: 'index.hbs',
       template: path.resolve(__dirname, 'index.hbs'),
-    })
+    }),
+    new CompressionPlugin({
+      algorithm: 'gzip',
+      test: /\.(js|css|html|svg)$/,
+      threshold: 1024,
+      minRatio: 0.8,
+    }),
+    new CompressionPlugin({
+      algorithm: 'brotliCompress',
+      filename: '[path][base].br',
+      test: /\.(js|css|html|svg)$/,
+      compressionOptions: {
+        params: {
+          [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+        },
+      },
+      threshold: 1024,
+      minRatio: 0.8,
+    }),
+    ...(process.env.ANALYZE ? [
+      new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)({
+        analyzerMode: 'static',
+        openAnalyzer: false,
+        reportFilename: path.resolve(__dirname, 'dist/cncjs/bundle-report.html'),
+      }),
+    ] : []),
   ],
   resolve: {
     alias: {

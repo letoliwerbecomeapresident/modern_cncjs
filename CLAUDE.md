@@ -88,6 +88,36 @@ chore(deps): bump @babel/runtime from 7.20.13 to 7.27.6
 
 **Tradeoff:** te wytyczne są ostrożniejsze niż domyślne — dla trywialnych zadań stosuj zdrowy rozsądek.
 
+### 0. Target deployment: Raspberry Pi — lekkość ma priorytet
+
+**Aplikacja jest docelowo hostowana na Raspberry Pi.** To jest nadrzędny kontekst dla każdej decyzji w projekcie. Plan optymalizacji — patrz `OPTIMIZATION.md` w root projektu (pełna lista priorytetów P0–P6).
+
+**Co to znaczy w praktyce, przy każdej zmianie:**
+
+- **Bundle size to first-class concern.** Zanim dodasz nową zależność z `node_modules` — sprawdź jej rozmiar (`bundlephobia.com` lub `npm view <pkg>`). Jeśli waży >20 KB gzip — uzasadnij albo poszukaj lżejszej alternatywy.
+- **Importuj selektywnie.** Nigdy `import _ from 'lodash'` ani `import * as THREE from 'three'`. Zawsze `import get from 'lodash/get'` / `import { Mesh } from 'three'`. Cherry-pick > namespace import.
+- **Preferuj lazy-load dla rzadko używanych ekranów.** Settings, Visualizer, panele które nie są na głównej ścieżce użytkownika — dynamiczny `import()` z `webpackChunkName`.
+- **Throttle eventy o wysokiej częstotliwości.** Socket.IO `controller:state` / `sender:status` mogą lecieć 10+ Hz. Każdy event który prowadzi do `setState` musi być throttle'owany (10 Hz cap), inaczej Pi-przeglądarka (tablet jako HMI) się dławi.
+- **Stabilne propsy w hot ścieżkach.** Panele ControlDeck rerenderują przy każdym evencie kontrolera. Unikaj inline obiektów/funkcji w propsach (`<Panel config={{...}} onClick={() => ...} />`) — niwelują `PureComponent`. Trzymaj referencje stabilne (instance fields, bound methods).
+- **Frontend vs runtime Pi.** Rozróżniaj:
+  - **Bundle (frontend)** ładuje się w przeglądarce klienta — tu ważą megabajty JS/CSS/Three.js
+  - **Runtime Node** chodzi na Pi — tu ważą RAM, CPU, I/O karty SD (logi, sessions)
+
+  Decyzja optymalizacyjna ma inny ciężar w zależności od warstwy. Zmiana frontowa odciąża transfer i czas startu UI; zmiana serwerowa odciąża samo Pi.
+- **Każda nowa zależność = uzasadnienie.** Trzy pytania przed `yarn add <pkg>`:
+  1. Czy istniejące deps tego nie robią?
+  2. Ile waży po gzip?
+  3. Czy używamy >30% jego API? Jeśli nie — może lżejsza alternatywa (np. `dayjs` zamiast `moment`).
+- **Stare zależności do likwidacji są w `OPTIMIZATION.md` P2.** Nie dodawaj kodu który zwiększa ich użycie (`moment`, pełen `font-awesome`, klasyczne widgety zastąpione przez ControlDeck).
+- **Mierz, nie zgaduj.** Przy zmianach mających wpływ na bundle:
+  ```bash
+  yarn build
+  ls -lh dist/cncjs/app/*.js dist/cncjs/app/*.css
+  gzip -c dist/cncjs/app/main.*.bundle.js | wc -c
+  ```
+  Albo `ANALYZE=1 yarn build` jeśli skonfigurowano `webpack-bundle-analyzer`.
+- **Gdy w wątpliwość, raczej nie dodawaj.** Złota zasada CNCjs-na-Pi: każdy KB JS i każdy MB RAM ma znaczenie, bo finalny user uruchamia to na maszynce z 1–8 GB RAM i kartą SD jako dyskiem.
+
 ### 1. Myśl zanim kodujesz
 
 - Wypowiedz swoje założenia. Jeśli niepewny — pytaj.

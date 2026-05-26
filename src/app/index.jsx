@@ -101,7 +101,7 @@ series([
           try {
             const res = await api.getState();
             const { allowAnonymousUsageDataCollection } = res.body || {};
-            if (allowAnonymousUsageDataCollection && !GoogleAnalytics4.isInitialized) {
+            if (allowAnonymousUsageDataCollection && settings.analytics.trackingId && !GoogleAnalytics4.isInitialized) {
               GoogleAnalytics4.initialize([
                 {
                   trackingId: settings.analytics.trackingId,
