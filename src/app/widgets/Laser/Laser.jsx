@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import get from 'lodash/get';
 import Slider from 'rc-slider';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
@@ -33,19 +33,19 @@ class Laser extends PureComponent {
       let scale = 0;
 
       if (controllerType === GRBL) {
-        const ovS = _.get(controllerState, 'status.ov[2]', []);
+        const ovS = get(controllerState, 'status.ov[2]', []);
         scale = Number(ovS) || 0;
       }
       if (controllerType === MARLIN) {
-        const ovS = _.get(controllerState, 'ovS');
+        const ovS = get(controllerState, 'ovS');
         scale = Number(ovS) || 0;
       }
       if (controllerType === SMOOTHIE) {
-        const ovS = _.get(controllerState, 'status.ovS');
+        const ovS = get(controllerState, 'status.ovS');
         scale = Number(ovS) || 0;
       }
       if (controllerType === TINYG) {
-        const ovS = _.get(controllerSettings, 'sso');
+        const ovS = get(controllerSettings, 'sso');
         scale = Math.round((Number(ovS) || 0) * 100);
       }
 

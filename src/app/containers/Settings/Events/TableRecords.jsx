@@ -1,7 +1,7 @@
 /* eslint react/jsx-no-bind: 0 */
 import chainedFunction from 'chained-function';
 import take from 'lodash/take';
-import moment from 'moment';
+import dayjs from 'app/lib/dayjs';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { Button } from 'app/components/Buttons';
@@ -189,7 +189,7 @@ class TableRecords extends PureComponent {
               render: (value, row, index) => {
                 const { mtime } = row;
                 if (mtime) {
-                  return moment(mtime).format('lll');
+                  return dayjs(mtime).format('lll');
                 }
 
                 return '–';

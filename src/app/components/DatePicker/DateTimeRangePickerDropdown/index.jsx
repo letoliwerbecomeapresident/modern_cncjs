@@ -1,5 +1,5 @@
 import _max from 'lodash/max';
-import moment from 'moment';
+import dayjs from 'app/lib/dayjs';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { Button } from 'app/components/Buttons';
@@ -8,9 +8,9 @@ import i18n from 'app/lib/i18n';
 import DateTimeRangePicker from '../DateTimeRangePicker';
 
 const normalizeDateString = (dateString) => {
-  let m = moment(dateString);
+  let m = dayjs(dateString);
   if (!m.isValid()) {
-    m = moment();
+    m = dayjs();
   }
   return m.format('YYYY-MM-DD');
 };
@@ -127,7 +127,7 @@ class DateTimeRangePickerDropdown extends PureComponent {
       const endTime = normalizeTimeString(this.state.nextEndTime);
       const isoStartDateTime = `${startDate}T${startTime}`;
       const isoEndDateTime = `${endDate}T${endTime}`;
-      const isSameOrAfterEnd = moment(isoStartDateTime).isSameOrAfter(isoEndDateTime);
+      const isSameOrAfterEnd = dayjs(isoStartDateTime).isSameOrAfter(isoEndDateTime);
 
       this.setState({
         nextStartDate: startDate,
@@ -147,7 +147,7 @@ class DateTimeRangePickerDropdown extends PureComponent {
       const endTime = normalizeTimeString(this.state.nextEndTime);
       const isoStartDateTime = `${startDate}T${startTime}`;
       const isoEndDateTime = `${endDate}T${endTime}`;
-      const isSameOrBeforeStart = moment(isoEndDateTime).isSameOrBefore(isoStartDateTime);
+      const isSameOrBeforeStart = dayjs(isoEndDateTime).isSameOrBefore(isoStartDateTime);
 
       this.setState({
         nextStartDate: isSameOrBeforeStart ? endDate : startDate,
@@ -164,7 +164,7 @@ class DateTimeRangePickerDropdown extends PureComponent {
       const endTime = normalizeTimeString(this.state.nextEndTime);
       const isoStartDateTime = `${startDate}T${startTime}`;
       const isoEndDateTime = `${endDate}T${endTime}`;
-      const isSameOrAfterEnd = moment(isoStartDateTime).isSameOrAfter(isoEndDateTime);
+      const isSameOrAfterEnd = dayjs(isoStartDateTime).isSameOrAfter(isoEndDateTime);
 
       this.setState({
         nextStartTime: startTime,
@@ -179,7 +179,7 @@ class DateTimeRangePickerDropdown extends PureComponent {
       const endTime = normalizeTimeString(time);
       const isoStartDateTime = `${startDate}T${startTime}`;
       const isoEndDateTime = `${endDate}T${endTime}`;
-      const isSameOrBeforeStart = moment(isoEndDateTime).isSameOrBefore(isoStartDateTime);
+      const isSameOrBeforeStart = dayjs(isoEndDateTime).isSameOrBefore(isoStartDateTime);
 
       this.setState({
         nextStartTime: isSameOrBeforeStart ? endTime : startTime,
@@ -192,12 +192,12 @@ class DateTimeRangePickerDropdown extends PureComponent {
 
       if (period !== this.state.period) {
         const days = parseInt(this.props.defaultPeriod, 10) || DateTimeRangePickerDropdown.defaultProps.defaultPeriod;
-        const startOfDay = moment().startOf('day');
-        const endOfDay = moment().endOf('day');
-        const startDate = moment(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('YYYY-MM-DD');
-        const startTime = moment(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('HH:mm:ss');
-        const endDate = moment(endOfDay).format('YYYY-MM-DD');
-        const endTime = moment(endOfDay).format('HH:mm:ss');
+        const startOfDay = dayjs().startOf('day');
+        const endOfDay = dayjs().endOf('day');
+        const startDate = dayjs(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('YYYY-MM-DD');
+        const startTime = dayjs(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('HH:mm:ss');
+        const endDate = dayjs(endOfDay).format('YYYY-MM-DD');
+        const endTime = dayjs(endOfDay).format('HH:mm:ss');
 
         this.setState(state => ({
           period,
@@ -289,13 +289,13 @@ class DateTimeRangePickerDropdown extends PureComponent {
 
     getInitialState() {
       const days = parseInt(this.props.defaultPeriod, 10) || DateTimeRangePickerDropdown.defaultProps.defaultPeriod;
-      const startOfDay = moment().startOf('day');
-      const endOfDay = moment().endOf('day');
+      const startOfDay = dayjs().startOf('day');
+      const endOfDay = dayjs().endOf('day');
       const {
-        startDate = moment(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('YYYY-MM-DD'),
-        startTime = moment(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('HH:mm:ss'),
-        endDate = moment(endOfDay).format('YYYY-MM-DD'),
-        endTime = moment(endOfDay).format('HH:mm:ss')
+        startDate = dayjs(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('YYYY-MM-DD'),
+        startTime = dayjs(startOfDay).subtract((days > 0) ? (days - 1) : 0, 'days').format('HH:mm:ss'),
+        endDate = dayjs(endOfDay).format('YYYY-MM-DD'),
+        endTime = dayjs(endOfDay).format('HH:mm:ss')
       } = this.props;
 
       return {
@@ -326,8 +326,8 @@ class DateTimeRangePickerDropdown extends PureComponent {
       const showDateTimeRangePicker = this.state.open && (period === 'custom');
 
       const maxDays = _max(periods.map(period => parseInt(period, 10)));
-      const today = moment().startOf('day');
-      const minDate = moment(today).subtract(maxDays - 1, 'days').format('YYYY-MM-DD');
+      const today = dayjs().startOf('day');
+      const minDate = dayjs(today).subtract(maxDays - 1, 'days').format('YYYY-MM-DD');
 
       return (
         <Dropdown

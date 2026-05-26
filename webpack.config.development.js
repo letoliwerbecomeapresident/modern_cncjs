@@ -150,8 +150,8 @@ module.exports = {
       debug: true
     }),
     new webpack.ContextReplacementPlugin(
-      /moment[\/\\]locale$/,
-      new RegExp('^\./(' + without(buildConfig.languages, 'en').join('|') + ')$')
+      /dayjs[\/\\]locale$/,
+      new RegExp('^\\./(' + without(buildConfig.languages, 'en').join('|') + ')(\\.js)?$')
     ),
     new ESLintPlugin({
       extensions: ['js', 'jsx'],

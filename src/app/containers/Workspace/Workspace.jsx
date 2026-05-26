@@ -1,4 +1,9 @@
-import _ from 'lodash';
+import difference from 'lodash/difference';
+import includes from 'lodash/includes';
+import pick from 'lodash/pick';
+import pullAll from 'lodash/pullAll';
+import size from 'lodash/size';
+import throttle from 'lodash/throttle';
 import classNames from 'classnames';
 import pubsub from 'pubsub-js';
 import React, { PureComponent } from 'react';
@@ -52,7 +57,7 @@ class Workspace extends PureComponent {
       isUploading: false,
       showPrimaryContainer: store.get('workspace.container.primary.show'),
       showSecondaryContainer: store.get('workspace.container.secondary.show'),
-      inactiveCount: _.size(widgetManager.getInactiveWidgets())
+      inactiveCount: size(widgetManager.getInactiveWidgets())
     };
 
     action = {
@@ -138,7 +143,7 @@ class Workspace extends PureComponent {
         const { hold, holdReason } = { ...status };
 
         if (!hold) {
-          if (_.includes([MODAL_FEEDER_PAUSED, MODAL_FEEDER_WAIT], modal.name)) {
+          if (includes([MODAL_FEEDER_PAUSED, MODAL_FEEDER_WAIT], modal.name)) {
             this.action.closeModal();
           }
           return;
@@ -274,7 +279,7 @@ class Workspace extends PureComponent {
           return;
         }
 
-        log.debug('FileReader:', _.pick(file, [
+        log.debug('FileReader:', pick(file, [
           'lastModified',
           'lastModifiedDate',
           'meta',
@@ -316,24 +321,24 @@ class Workspace extends PureComponent {
           .filter(widgetId => {
             // e.g. "webcam" or "webcam:d8e6352f-80a9-475f-a4f5-3e9197a48a23"
             const name = widgetId.split(':')[0];
-            return _.includes(activeWidgets, name);
+            return includes(activeWidgets, name);
           });
 
         const defaultWidgets = store.get('workspace.container.default.widgets');
-        const sortableWidgets = _.difference(widgets, defaultWidgets);
+        const sortableWidgets = difference(widgets, defaultWidgets);
         let primaryWidgets = store.get('workspace.container.primary.widgets');
         let secondaryWidgets = store.get('workspace.container.secondary.widgets');
 
         primaryWidgets = sortableWidgets.slice();
-        _.pullAll(primaryWidgets, secondaryWidgets);
+        pullAll(primaryWidgets, secondaryWidgets);
         pubsub.publish('updatePrimaryWidgets', primaryWidgets);
 
         secondaryWidgets = sortableWidgets.slice();
-        _.pullAll(secondaryWidgets, primaryWidgets);
+        pullAll(secondaryWidgets, primaryWidgets);
         pubsub.publish('updateSecondaryWidgets', secondaryWidgets);
 
         // Update inactive count
-        this.setState({ inactiveCount: _.size(inactiveWidgets) });
+        this.setState({ inactiveCount: size(inactiveWidgets) });
       });
     };
 
@@ -343,24 +348,24 @@ class Workspace extends PureComponent {
           .filter(widgetId => {
             // e.g. "webcam" or "webcam:d8e6352f-80a9-475f-a4f5-3e9197a48a23"
             const name = widgetId.split(':')[0];
-            return _.includes(activeWidgets, name);
+            return includes(activeWidgets, name);
           });
 
         const defaultWidgets = store.get('workspace.container.default.widgets');
-        const sortableWidgets = _.difference(widgets, defaultWidgets);
+        const sortableWidgets = difference(widgets, defaultWidgets);
         let primaryWidgets = store.get('workspace.container.primary.widgets');
         let secondaryWidgets = store.get('workspace.container.secondary.widgets');
 
         secondaryWidgets = sortableWidgets.slice();
-        _.pullAll(secondaryWidgets, primaryWidgets);
+        pullAll(secondaryWidgets, primaryWidgets);
         pubsub.publish('updateSecondaryWidgets', secondaryWidgets);
 
         primaryWidgets = sortableWidgets.slice();
-        _.pullAll(primaryWidgets, secondaryWidgets);
+        pullAll(primaryWidgets, secondaryWidgets);
         pubsub.publish('updatePrimaryWidgets', primaryWidgets);
 
         // Update inactive count
-        this.setState({ inactiveCount: _.size(inactiveWidgets) });
+        this.setState({ inactiveCount: size(inactiveWidgets) });
       });
     };
 
@@ -390,7 +395,7 @@ class Workspace extends PureComponent {
     }
 
     addResizeEventListener() {
-      this.onResizeThrottled = _.throttle(this.resizeDefaultContainer, 50);
+      this.onResizeThrottled = throttle(this.resizeDefaultContainer, 50);
       window.addEventListener('resize', this.onResizeThrottled);
     }
 

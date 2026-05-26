@@ -7616,15 +7616,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bundle-loader@npm:~0.5.6":
-  version: 0.5.6
-  resolution: "bundle-loader@npm:0.5.6"
-  dependencies:
-    loader-utils: ^1.1.0
-  checksum: 471ebe52c302c9e7945e19cc4a8d4c47c5a8379c7144eaa5b1ef4a97646b4087a0f57219fff1fcae25293a4a83000e262157e8dc071f0b3451e756411985192a
-  languageName: node
-  linkType: hard
-
 "bundle-name@npm:^4.1.0":
   version: 4.1.0
   resolution: "bundle-name@npm:4.1.0"
@@ -8250,7 +8241,6 @@ __metadata:
     body-parser: ~1.18.3
     boolean: ~1.0.0
     bootstrap: ~3.3.7
-    bundle-loader: ~0.5.6
     chained-function: ~0.5.0
     chalk: ~4.1.1
     classnames: ~2.2.6
@@ -8270,6 +8260,7 @@ __metadata:
     crypto-browserify: ^3.12.0
     css-loader: ~3.0.0
     css-minimizer-webpack-plugin: ^8.0.0
+    dayjs: ^1.11.21
     debug: ~4.1.1
     deep-keys: ~0.5.0
     del-cli: ~3.0.1
@@ -8336,7 +8327,6 @@ __metadata:
     mini-css-extract-plugin: ~2.9.0
     minimatch: ~3.1.4
     mkdirp: ~0.5.1
-    moment: ~2.24.0
     morgan: ~1.9.1
     mousetrap: ~1.6.3
     namespace-constants: ~0.5.0
@@ -9522,6 +9512,13 @@ __metadata:
   version: 1.30.1
   resolution: "date-fns@npm:1.30.1"
   checksum: 86b1f3269cbb1f3ee5ac9959775ea6600436f4ee2b78430cd427b41a0c9fabf740b1a5d401c085f3003539a6f4755c7c56c19fbd70ce11f6f673f6bc8075b710
+  languageName: node
+  linkType: hard
+
+"dayjs@npm:^1.11.21":
+  version: 1.11.21
+  resolution: "dayjs@npm:1.11.21"
+  checksum: f168e00e88c5bf5a1153090f2fb279e0f7b5f0ee332062abfd5c6e2e8e0f1ba27c3f278183d73668cdfeefdd50b1d13346fdc2ace441962fc9ca6363f902ad05
   languageName: node
   linkType: hard
 
@@ -16919,13 +16916,6 @@ __metadata:
   bin:
     mkdirp: bin/cmd.js
   checksum: a96865108c6c3b1b8e1d5e9f11843de1e077e57737602de1b82030815f311be11f96f09cce59bd5b903d0b29834733e5313f9301e3ed6d6f6fba2eae0df4298f
-  languageName: node
-  linkType: hard
-
-"moment@npm:~2.24.0":
-  version: 2.24.0
-  resolution: "moment@npm:2.24.0"
-  checksum: 9cd93a251a2b33cb1b532eade0e496a2a7547faa6cfe37a283ee7bf69e202cd7c8ab0673d66883b5b29aed051353176dc0e6684f04073a75b0a155c500be1580
   languageName: node
   linkType: hard
 

@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import get from 'lodash/get';
 import classNames from 'classnames';
 import colornames from 'colornames';
 import PropTypes from 'prop-types';
@@ -95,7 +95,7 @@ class PrimaryToolbar extends PureComponent {
       let stateText = '';
 
       if (controllerType === GRBL) {
-        const activeState = _.get(controllerState, 'status.activeState');
+        const activeState = get(controllerState, 'status.activeState');
 
         stateStyle = {
           [GRBL_ACTIVE_STATE_IDLE]: 'controller-state-default',
@@ -125,7 +125,7 @@ class PrimaryToolbar extends PureComponent {
       }
 
       if (controllerType === SMOOTHIE) {
-        const activeState = _.get(controllerState, 'status.activeState');
+        const activeState = get(controllerState, 'status.activeState');
 
         stateStyle = {
           [SMOOTHIE_ACTIVE_STATE_IDLE]: 'controller-state-default',
@@ -149,7 +149,7 @@ class PrimaryToolbar extends PureComponent {
       }
 
       if (controllerType === TINYG) {
-        const machineState = _.get(controllerState, 'sr.machineState');
+        const machineState = get(controllerState, 'sr.machineState');
 
         // https://github.com/synthetos/g2/wiki/Alarm-Processing
         stateStyle = {
@@ -206,19 +206,19 @@ class PrimaryToolbar extends PureComponent {
       const defaultWCS = 'G54';
 
       if (controllerType === GRBL) {
-        return _.get(controllerState, 'parserstate.modal.wcs') || defaultWCS;
+        return get(controllerState, 'parserstate.modal.wcs') || defaultWCS;
       }
 
       if (controllerType === MARLIN) {
-        return _.get(controllerState, 'modal.wcs') || defaultWCS;
+        return get(controllerState, 'modal.wcs') || defaultWCS;
       }
 
       if (controllerType === SMOOTHIE) {
-        return _.get(controllerState, 'parserstate.modal.wcs') || defaultWCS;
+        return get(controllerState, 'parserstate.modal.wcs') || defaultWCS;
       }
 
       if (controllerType === TINYG) {
-        return _.get(controllerState, 'sr.modal.wcs') || defaultWCS;
+        return get(controllerState, 'sr.modal.wcs') || defaultWCS;
       }
 
       return defaultWCS;

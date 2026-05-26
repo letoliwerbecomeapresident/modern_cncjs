@@ -175,9 +175,9 @@ module.exports = {
           name: 'vendor.lodash',
           priority: 20,
         },
-        moment: {
-          test: /[\\/]node_modules[\\/]moment[\\/]/,
-          name: 'vendor.moment',
+        dayjs: {
+          test: /[\\/]node_modules[\\/]dayjs[\\/]/,
+          name: 'vendor.dayjs',
           priority: 20,
         },
         i18next: {
@@ -203,8 +203,8 @@ module.exports = {
       }
     }),
     new webpack.ContextReplacementPlugin(
-      /moment[\/\\]locale$/,
-      new RegExp('^\./(' + without(buildConfig.languages, 'en').join('|') + ')$')
+      /dayjs[\/\\]locale$/,
+      new RegExp('^\\./(' + without(buildConfig.languages, 'en').join('|') + ')(\\.js)?$')
     ),
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',

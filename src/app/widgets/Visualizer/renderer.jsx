@@ -1,6 +1,6 @@
 import path from 'path';
 import includes from 'lodash/includes';
-import moment from 'moment';
+import dayjs from 'app/lib/dayjs';
 import PropTypes from 'prop-types';
 import React from 'react';
 import classNames from 'classnames';
@@ -136,7 +136,7 @@ const renderer = (node, treeOptions) => {
     }
     return disabled;
   }(node));
-  const dateModified = moment(node.props.mtime).format('lll');
+  const dateModified = dayjs(node.props.mtime).format('lll');
   const size = includes(['f', 'l'], node.props.type) ? formatBytes(node.props.size, 0) : '';
   const type = (function(node) {
     if (node.props.type === 'd') {

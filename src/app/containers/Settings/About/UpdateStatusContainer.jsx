@@ -1,4 +1,4 @@
-import moment from 'moment';
+import dayjs from 'app/lib/dayjs';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -41,7 +41,7 @@ const UpdateStatusContainer = (props) => {
           <div className={styles.releaseLatest}>
             {i18n._('Version {{version}}', { version: latest })}
             <br />
-            {moment(lastUpdate).format('LLL')}
+            {dayjs(lastUpdate).format('LLL')}
           </div>
         </div>
         <div className={styles.updateStatusActionContainer}>

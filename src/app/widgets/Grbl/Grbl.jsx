@@ -1,5 +1,7 @@
 import { ensureArray } from 'ensure-type';
-import _ from 'lodash';
+import get from 'lodash/get';
+import isEmpty from 'lodash/isEmpty';
+import mapValues from 'lodash/mapValues';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import { ProgressBar } from 'react-bootstrap';
@@ -32,15 +34,15 @@ class Grbl extends PureComponent {
       const none = '–';
       const panel = state.panel;
       const controllerState = state.controller.state || {};
-      const parserState = _.get(controllerState, 'parserstate', {});
-      const activeState = _.get(controllerState, 'status.activeState') || none;
-      const feedrate = _.get(controllerState, 'status.feedrate', _.get(parserState, 'feedrate', none));
-      const spindle = _.get(controllerState, 'status.spindle', _.get(parserState, 'spindle', none));
-      const tool = _.get(parserState, 'tool', none);
-      const ov = _.get(controllerState, 'status.ov', []);
+      const parserState = get(controllerState, 'parserstate', {});
+      const activeState = get(controllerState, 'status.activeState') || none;
+      const feedrate = get(controllerState, 'status.feedrate', get(parserState, 'feedrate', none));
+      const spindle = get(controllerState, 'status.spindle', get(parserState, 'spindle', none));
+      const tool = get(parserState, 'tool', none);
+      const ov = get(controllerState, 'status.ov', []);
       const [ovF = 0, ovR = 0, ovS = 0] = ov;
-      const buf = _.get(controllerState, 'status.buf', {});
-      const modal = _.mapValues(parserState.modal || {}, mapGCodeToText);
+      const buf = get(controllerState, 'status.buf', {});
+      const modal = mapValues(parserState.modal || {}, mapGCodeToText);
       const receiveBufferStyle = ((rx) => {
         // danger: 0-7
         // warning: 8-15
@@ -61,7 +63,7 @@ class Grbl extends PureComponent {
       return (
         <div>
           <Overrides ovF={ovF} ovS={ovS} ovR={ovR} />
-          {!_.isEmpty(buf) && (
+          {!isEmpty(buf) && (
             <Panel className={styles.panel}>
               <Panel.Heading className={styles['panel-heading']}>
                 <Toggler

@@ -1,4 +1,4 @@
-import moment from 'moment';
+import dayjs from 'app/lib/dayjs';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import i18n from 'app/lib/i18n';
@@ -8,23 +8,21 @@ import {
 import styles from './index.styl';
 
 const formatISODateTime = (time) => {
-  return time > 0 ? moment.unix(time / 1000).format('YYYY-MM-DD HH:mm:ss') : '–';
+  return time > 0 ? dayjs.unix(time / 1000).format('YYYY-MM-DD HH:mm:ss') : '–';
 };
 
 const formatElapsedTime = (elapsedTime) => {
   if (!elapsedTime || elapsedTime < 0) {
     return '–';
   }
-  const d = moment.duration(elapsedTime, 'ms');
-  return moment(d._data).format('HH:mm:ss');
+  return dayjs.duration(elapsedTime).format('HH:mm:ss');
 };
 
 const formatRemainingTime = (remainingTime) => {
   if (!remainingTime || remainingTime < 0) {
     return '–';
   }
-  const d = moment.duration(remainingTime, 'ms');
-  return moment(d._data).format('HH:mm:ss');
+  return dayjs.duration(remainingTime).format('HH:mm:ss');
 };
 
 class GCodeStats extends PureComponent {

@@ -4,14 +4,16 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-26)
+## Status realizacji (ostatnia aktualizacja: 2026-05-26, P2.2)
 
 ### ✅ Zrobione
 
 - **P0.1** — `devtool: false` w `webpack.config.production.js` (źródło-mapy wyłączone w prod)
 - **P0.2** — `ESLintPlugin` usunięty z `webpack.config.production.js` (lint pozostaje w `yarn lint` + pre-push)
-- **P0.3** — `splitChunks` per-vendor (three, react, trendmicro, lodash, moment, i18next, misc) + `runtimeChunk: 'single'` + `TerserPlugin` (drop_console, 2 passes) + `CssMinimizerPlugin`. Dodane devDeps: `terser-webpack-plugin`, `css-minimizer-webpack-plugin`.
+- **P0.3** — `splitChunks` per-vendor (three, react, trendmicro, lodash, dayjs, i18next, misc) + `runtimeChunk: 'single'` + `TerserPlugin` (drop_console, 2 passes) + `CssMinimizerPlugin`. Dodane devDeps: `terser-webpack-plugin`, `css-minimizer-webpack-plugin`.
 - **P0.4** — `CompressionPlugin` (gzip + brotli q=11) w webpack + `express-static-gzip` w `src/server/app.js` (preferencja `br` → `gz` → raw). Dodane: `compression-webpack-plugin` (dev), `express-static-gzip` (runtime).
+- **P2.1** — `moment` → `dayjs` w 8 plikach + bootstrap z pluginami w `src/app/lib/dayjs.js` (`duration`, `isSameOrAfter`, `isSameOrBefore`, `localizedFormat`). `bundle-loader!moment/locale/*` zastąpione `import('dayjs/locale/${locale}.js')`. `ContextReplacementPlugin` ograniczony do locale z `build.config.languages`. `moment` + `bundle-loader` usunięte z deps.
+- **P2.2** — `import _ from 'lodash'` cherry-pickowany w 12 plikach `src/app/**` na `import get from 'lodash/get'` itp. Plugin `babel-plugin-lodash` zostaje (`src/server/**` nadal go używa). **Bundle output bez zmian** — plugin już wcześniej cherry-pickował automatycznie. Korzyść: deterministyczność, audytowalność, gotowość pod usunięcie pluginu.
 - **P2.3** — `jimp` usunięty z deps (nieużywany).
 - **P4.3** — Google Analytics wyłączone (`trackingId: ''` w `build.config.js` + guard w `src/app/index.jsx:104`).
 - **P5.2** — `immutable: true` w `serveStatic` opcjach (`src/server/app.js`).
@@ -30,15 +32,23 @@ Po P0:
 - Second load (po zmianie w `main`, vendory z cache): **~89 KB brotli** = **−86%**
 - `dist/cncjs/app/` zajmuje 8.2 MB (vs 6.5 MB) — koszt trzymania precompresowanych `.gz`/`.br` obok oryginałów
 
+Po P2.1 (moment → dayjs):
+- `vendor.moment` (83 KB raw) → `vendor.dayjs` (31 KB raw / 9.3 KB gzip / 8.1 KB brotli) — zawiera core + 4 plugins + 16 locales (en jest bazowy)
+- Initial load (first visit): **485 KB brotli** (vs ~542 KB po P0) = dodatkowe −57 KB (−10%)
+- `dist/cncjs/app/` 8.1 MB (vs 8.2 MB po P0)
+
+Po P2.2 (lodash cherry-pick frontu):
+- `vendor.lodash`: 45 KB raw / 14 KB gzip / 12 KB brotli — **bez zmian**
+- Initial load 485 KB brotli — bez zmian
+- `babel-plugin-lodash` już wcześniej robił automatyczne cherry-picki, więc po stronie KB zero. Pozostaje higiena: importy jawne, audyt przez `grep`, możliwość usunięcia plugin'u po analogicznym cherry-picku w `src/server/**` (out of scope).
+
 ### ⏭️ Do zrobienia w kolejności (z rekomendacji na dole)
 
 - **P1.1** — Lazy-load Visualizera. **Zablokowane** otwartym pytaniem 1: czy ControlDeck zastępuje klasyczny Workspace?
 - **P4.1 + P4.2** — Pi-side systemd unit + `NODE_OPTIONS=--max-old-space-size=512`. Plik unitu w `OPTIMIZATION.md` sekcja 4.2.
-- **P2.1** — moment → dayjs/date-fns (8 plików). Mechaniczna zamiana.
 - **P5.1** — Service Worker (workbox).
 - **P1.3** — Kasacja klasycznych widgetów. **Zablokowane** pytaniem 1.
 - **P1.4** — Selektywne importy Three.js. Wymaga bumpa `three` z ~0.103 na >=0.150 — średnie ryzyko (forki w `src/app/lib/three/`).
-- **P2.2** — Lodash cherry-pick (12 plików).
 - **P2.4** — Font Awesome subset.
 - **P2.5** — Wyrzucenie xterm (zależy od pytania 3).
 - **P2.6** — Audyt nakładających się stacków UI (bootstrap/react-bootstrap/styled-components/@trendmicro).

@@ -1,5 +1,6 @@
 import { ensureArray } from 'ensure-type';
-import _ from 'lodash';
+import get from 'lodash/get';
+import mapValues from 'lodash/mapValues';
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
 import mapGCodeToText from 'app/lib/gcode-text';
@@ -20,14 +21,14 @@ class Smoothie extends PureComponent {
       const none = '–';
       const panel = state.panel;
       const controllerState = state.controller.state || {};
-      const parserState = _.get(controllerState, 'parserstate', {});
-      const activeState = _.get(controllerState, 'status.activeState', none);
-      const ovF = _.get(controllerState, 'status.ovF', 0);
-      const ovS = _.get(controllerState, 'status.ovS', 0);
-      const feedrate = _.get(parserState, 'feedrate', none);
-      const spindle = _.get(parserState, 'spindle', none);
-      const tool = _.get(parserState, 'tool', none);
-      const modal = _.mapValues(parserState.modal || {}, mapGCodeToText);
+      const parserState = get(controllerState, 'parserstate', {});
+      const activeState = get(controllerState, 'status.activeState', none);
+      const ovF = get(controllerState, 'status.ovF', 0);
+      const ovS = get(controllerState, 'status.ovS', 0);
+      const feedrate = get(parserState, 'feedrate', none);
+      const spindle = get(parserState, 'spindle', none);
+      const tool = get(parserState, 'tool', none);
+      const modal = mapValues(parserState.modal || {}, mapGCodeToText);
 
       return (
         <div>

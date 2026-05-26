@@ -1,7 +1,7 @@
 /* eslint import/no-dynamic-require: 0 */
 import chainedFunction from 'chained-function';
 import GoogleAnalytics4 from 'react-ga4';
-import moment from 'moment';
+import dayjs from 'app/lib/dayjs';
 import pubsub from 'pubsub-js';
 import qs from 'qs';
 import React from 'react';
@@ -87,11 +87,16 @@ series([
       return;
     }
 
-    require('bundle-loader!moment/locale/' + locale)(() => {
-      log.debug(`moment: locale=${locale}`);
-      moment().locale(locale);
-      next();
-    });
+    import(/* webpackChunkName: "dayjs-locale-[request]" */ `dayjs/locale/${locale}.js`)
+      .then(() => {
+        log.debug(`dayjs: locale=${locale}`);
+        dayjs.locale(locale);
+        next();
+      })
+      .catch((err) => {
+        log.warn(`dayjs: failed to load locale=${locale}`, err);
+        next();
+      });
   })(),
   () => promisify(next => {
     const token = store.get('session.token');
