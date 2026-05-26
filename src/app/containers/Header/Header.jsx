@@ -4,6 +4,7 @@ import { Navbar } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
 import semver from 'semver';
 import styled from 'styled-components';
+import get from 'lodash/get';
 import without from 'lodash/without';
 import Push from 'push.js';
 import api from 'app/api';
@@ -120,6 +121,29 @@ class Header extends PureComponent {
     'config:change': () => {
       this.actions.fetchCommands();
     },
+    'serialport:open': ({ controllerType, port }) => {
+      this.setState({
+        controllerType: controllerType,
+        port: port
+      });
+    },
+    'serialport:close': () => {
+      this.setState({
+        controllerType: '',
+        controllerState: {},
+        port: '',
+        workflowState: 'idle'
+      });
+    },
+    'workflow:state': (workflowState) => {
+      this.setState({ workflowState: workflowState });
+    },
+    'controller:state': (controllerType, controllerState) => {
+      this.setState({
+        controllerType: controllerType,
+        controllerState: controllerState
+      });
+    },
     'task:start': (taskId) => {
       this.setState({
         runningTasks: this.state.runningTasks.concat(taskId)
@@ -206,7 +230,11 @@ class Header extends PureComponent {
       commands: [],
       runningTasks: [],
       currentVersion: settings.version,
-      latestVersion: settings.version
+      latestVersion: settings.version,
+      controllerType: controller.type,
+      controllerState: controller.state,
+      port: controller.port,
+      workflowState: controller.workflow.state
     };
   }
 
@@ -267,10 +295,19 @@ class Header extends PureComponent {
     const signedInName = store.get('session.name');
     const hideUserDropdown = !sessionEnabled;
     const showCommands = commands.length > 0;
+    const controllerState = this.state.controllerState || controller.state || {};
+    const status = get(controllerState, 'status', {});
+    const mpos = get(status, 'mpos', {});
+    const workflowState = this.state.workflowState || controller.workflow.state || 'idle';
+    const machineState = get(status, 'activeState', workflowState);
+    const controllerType = this.state.controllerType || controller.type || 'GRBL';
+    const isReady = controller.connected && !!(this.state.port || controller.port);
+    const formatPosition = axis => get(mpos, axis, '0.000');
 
     return (
       <Navbar
         aria-label="Application header"
+        className={styles.header}
         fixedTop
         fluid
         inverse
@@ -285,43 +322,22 @@ class Header extends PureComponent {
             placement="right"
           >
             <Anchor
-              className="navbar-brand"
-              style={{
-                padding: 0,
-                position: 'relative',
-                height: 50,
-                width: 60
-              }}
+              className={classNames('navbar-brand', styles.brandCard)}
               href={releases}
               target="_blank"
               title={`${settings.productName} ${settings.version}`}
             >
-              <img
-                style={{
-                  margin: '4px auto 0 auto'
-                }}
-                src="images/logo-badge-32x32.png"
-                alt=""
-              />
-              <div
-                style={{
-                  fontSize: '50%',
-                  lineHeight: '14px',
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {settings.version}
+              <div className={styles.brandMark}>
+                <img src="images/logo-badge-32x32.png" alt="" />
               </div>
+              <div className={styles.brandText}>
+                <strong>LaserCNC</strong>
+                <span>{controllerType} {i18n._('Control')}</span>
+              </div>
+              <span className={styles.version}>{settings.version}</span>
               {newUpdateAvailable && (
                 <span
-                  className="label label-primary"
-                  style={{
-                    fontSize: '50%',
-                    position: 'absolute',
-                    top: 2,
-                    right: 2
-                  }}
+                  className={classNames('label', 'label-primary', styles.updateBadge)}
                 >
                   N
                 </span>
@@ -331,23 +347,33 @@ class Header extends PureComponent {
           <Navbar.Toggle />
         </Navbar.Header>
         <Navbar.Collapse>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              columnGap: '8px',
-            }}
-          >
+          <div className={styles.headerLayout}>
+            {location.pathname === '/workspace' && (
+              <div className={styles.statusStrip}>
+                <div className={styles.statusBlock}>
+                  <span>{i18n._('Machine Status')}</span>
+                  <strong className={isReady ? styles.ready : styles.offline}>
+                    {isReady ? machineState : i18n._('Offline')}
+                  </strong>
+                </div>
+                <div className={styles.statusBlock}>
+                  <span>{i18n._('Position')}</span>
+                  <strong>
+                    X&nbsp;{formatPosition('x')}
+                    <em>Y&nbsp;{formatPosition('y')}</em>
+                    Z&nbsp;{formatPosition('z')}
+                  </strong>
+                </div>
+                <div className={styles.statusBlock}>
+                  <span>{i18n._('Workflow')}</span>
+                  <strong>{workflowState}</strong>
+                </div>
+              </div>
+            )}
             {location.pathname === '/workspace' && (
               <QuickAccessToolbar state={this.state} actions={this.actions} />
             )}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
+            <div className={styles.headerMenus}>
               <Dropdown
                 className={classNames(
                   { 'hidden': hideUserDropdown }

@@ -28,6 +28,7 @@ $widget-footer-height = $widget-footer-padding-top + 28px + $widget-footer-paddi
 .widget-header {
     height: $widget-header-height;
     padding: $widget-header-padding;
+    background: rgba(7, 17, 31, .88);
 }
 
 .widget-content {
@@ -36,6 +37,11 @@ $widget-footer-height = $widget-footer-padding-top + 28px + $widget-footer-paddi
     right: 0;
     bottom: 0;
     left: 0;
+    background:
+        linear-gradient(rgba(88, 166, 255, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88, 166, 255, .045) 1px, transparent 1px),
+        #08131f;
+    background-size: 22px 22px;
 
     &.view3D {
         bottom: $widget-footer-height;
@@ -48,4 +54,6 @@ $widget-footer-height = $widget-footer-padding-top + 28px + $widget-footer-paddi
     left: 0;
     right: 0;
     height: $widget-footer-height;
+    background: rgba(7, 17, 31, .9);
+    border-top: 1px solid rgba(82, 112, 154, .22);
 }

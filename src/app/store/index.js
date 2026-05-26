@@ -19,11 +19,15 @@ const cnc = {
 
 const store = new ImmutableStore(defaultState);
 
+const hasElectronBridge = () => {
+  return isElectron() && typeof window.require === 'function';
+};
+
 const getConfig = async () => {
   let content = '';
 
   // Check whether the code is running in Electron renderer process
-  if (isElectron()) {
+  if (hasElectronBridge()) {
     const electron = window.require('electron');
     content = await electron.ipcRenderer.invoke('read-user-config');
   } else {
@@ -48,7 +52,7 @@ const persist = async (data) => {
     const value = JSON.stringify(data, null, 2);
 
     // Check whether the code is running in Electron renderer process
-    if (isElectron()) {
+    if (hasElectronBridge()) {
       const electron = window.require('electron');
       await electron.ipcRenderer.invoke('write-user-config', value);
     } else {

@@ -42,6 +42,8 @@ class TerminalWrapper extends PureComponent {
 
     term = null;
 
+    scrollToBottomTimer = null;
+
     eventHandler = {
       onResize: () => {
         const { rows, cols } = this.term;
@@ -276,6 +278,10 @@ class TerminalWrapper extends PureComponent {
     }
 
     componentWillUnmount() {
+      if (this.scrollToBottomTimer) {
+        clearTimeout(this.scrollToBottomTimer);
+        this.scrollToBottomTimer = null;
+      }
       if (this.verticalScrollbar) {
         this.verticalScrollbar.destroy();
         this.verticalScrollbar = null;
@@ -347,8 +353,29 @@ class TerminalWrapper extends PureComponent {
       this.term.resize(cols, rows);
     }
 
+    scrollToBottom() {
+      if (this.scrollToBottomTimer) {
+        return;
+      }
+
+      this.scrollToBottomTimer = setTimeout(() => {
+        this.scrollToBottomTimer = null;
+
+        if (!(this.term && this.term.element)) {
+          return;
+        }
+
+        this.term.scrollToBottom();
+
+        if (this.verticalScrollbar) {
+          this.verticalScrollbar.update();
+        }
+      }, 0);
+    }
+
     clear() {
       this.term.clear();
+      this.scrollToBottom();
     }
 
     selectAll() {
@@ -361,6 +388,7 @@ class TerminalWrapper extends PureComponent {
 
     write(data) {
       this.term.write(data);
+      this.scrollToBottom();
     }
 
     writeln(data) {
@@ -368,6 +396,7 @@ class TerminalWrapper extends PureComponent {
       this.term.write('\r');
       this.term.write(data);
       this.term.prompt();
+      this.scrollToBottom();
     }
 
     render() {

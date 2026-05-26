@@ -30,6 +30,7 @@ class Sidebar extends PureComponent {
                     styles.iconXyz
                   )}
                 />
+                <span className={styles.label}>{i18n._('Dashboard')}</span>
               </Link>
             </li>
             <li
@@ -47,6 +48,7 @@ class Sidebar extends PureComponent {
                     styles.iconGear
                   )}
                 />
+                <span className={styles.label}>{i18n._('Settings')}</span>
               </Link>
             </li>
           </ul>

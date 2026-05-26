@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+// Polyfill SlowBuffer for compatibility with old dependencies in newer Node versions
+const bufferModule = require('buffer');
+if (!bufferModule.SlowBuffer) {
+  bufferModule.SlowBuffer = class SlowBuffer {};
+}
+
 const launchServer = (process.env.NODE_ENV === 'development')
   ? require('../output/cncjs/server-cli')
   : require('../dist/cncjs/server-cli');

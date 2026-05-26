@@ -1,4 +1,21 @@
 :global {
+    .navbar.navbar-inverse {
+        min-height: 76px;
+        background:
+            linear-gradient(180deg, rgba(14, 28, 49, .98) 0%, rgba(8, 18, 33, .98) 100%) !important;
+        border-bottom: 1px solid rgba(75, 110, 161, .28) !important;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+    }
+
+    .navbar-header {
+        min-height: 76px;
+    }
+
+    .navbar-collapse {
+        border: 0;
+        box-shadow: none;
+    }
+
     #nav-dropdown-user,
     #nav-dropdown-menu {
         padding: 14px 8px;
@@ -10,18 +27,184 @@
 }
 
 .btn-icon {
-    color: #444;
+    color: #90a4c0;
     &:hover,
     &:focus {
-        color: #222;
+        color: #f8fbff;
     }
+}
+
+.header {
+    border: 0;
+}
+
+.header-layout {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 10px;
+    min-height: 76px;
+}
+
+.brand-card {
+    &&& {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 206px;
+        height: 58px;
+        margin: 9px 10px 9px 8px;
+        padding: 8px 10px;
+        color: #f8fbff;
+        background: linear-gradient(180deg, rgba(17, 35, 61, .92), rgba(8, 18, 33, .92));
+        border: 1px solid rgba(64, 110, 178, .36);
+        border-radius: 6px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+        text-decoration: none;
+    }
+}
+
+.brand-mark {
+    flex: 0 0 34px;
+    height: 34px;
+    border-radius: 5px;
+    background: rgba(47, 129, 247, .1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+        width: 28px;
+        height: 28px;
+        filter: drop-shadow(0 0 10px rgba(47, 129, 247, .55));
+    }
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin-left: 10px;
+
+    strong {
+        font-size: 16px;
+        line-height: 18px;
+        letter-spacing: .01em;
+    }
+
+    span {
+        margin-top: 3px;
+        color: #58a6ff;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 12px;
+        text-transform: uppercase;
+    }
+}
+
+.version {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    color: #6e829e;
+    font-size: 9px;
+}
+
+.update-badge {
+    position: absolute;
+    right: 8px;
+    bottom: 7px;
+}
+
+.status-strip {
+    display: flex;
+    min-width: 520px;
+    margin: 8px 0;
+    background: linear-gradient(180deg, rgba(14, 28, 49, .82), rgba(9, 20, 36, .78));
+    border: 1px solid rgba(64, 91, 130, .28);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.status-block {
+    min-width: 150px;
+    padding: 11px 20px;
+    border-right: 1px solid rgba(64, 91, 130, .24);
+
+    &:last-child {
+        border-right: 0;
+    }
+
+    span {
+        display: block;
+        color: #8fa4c0;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 12px;
+        text-transform: uppercase;
+    }
+
+    strong {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 8px;
+        color: #f8fbff;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 18px;
+        white-space: nowrap;
+    }
+
+    em {
+        color: #43d17f;
+        font-style: normal;
+    }
+}
+
+.ready {
+    color: #21d982 !important;
+
+    &:before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #21d982;
+        box-shadow: 0 0 12px rgba(33, 217, 130, .8);
+    }
+}
+
+.offline {
+    color: #f87171 !important;
+
+    &:before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f87171;
+        box-shadow: 0 0 12px rgba(248, 113, 113, .55);
+    }
+}
+
+.header-menus {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 8px;
 }
 
 .nav-dropdown-toggle {
   &&& {
     min-width: 0;
+    width: 38px;
+    height: 38px;
     padding: 0;
-    color: #666;
+    color: #a8b8cf;
+    background: rgba(18, 35, 58, .8);
+    border: 1px solid rgba(70, 98, 138, .28);
+    border-radius: 6px;
 
     &:hover > * {
       color: #fff;
@@ -30,24 +213,97 @@
 }
 
 .quick-access-toolbar {
-    margin: 10px 0 10px 15px;
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
 
     @media (min-width: 768px) {
         float: right;
     }
 
     :global {
+        .nav {
+            display: flex;
+            gap: 8px;
+            margin: 0;
+        }
+
         .btn-group {
             float: left;
-            margin-right: 10px;
+            display: flex;
+            gap: 8px;
+            margin-right: 0;
         }
+
         .btn {
-            height: 30px;
+            min-width: 104px;
+            height: 58px;
+            padding: 8px 14px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 10px 20px rgba(0, 0, 0, .22);
+        }
+
+        .btn .fa {
+            display: block;
+            margin: 0 auto 4px;
+            font-size: 18px;
+        }
+
+        .btn-success {
+            background: linear-gradient(180deg, #10b86b, #05894d);
+            border-color: rgba(42, 226, 133, .45);
+        }
+
+        .btn-warning {
+            background: linear-gradient(180deg, #f28a13, #c75a04);
+            border-color: rgba(251, 146, 60, .55);
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #1269dc, #0d47a1);
+            border-color: rgba(88, 166, 255, .45);
+        }
+
+        .btn-default {
+            background: linear-gradient(180deg, #13243d, #0b1728);
+            border-color: rgba(82, 112, 154, .34);
+            color: #b7c6db;
+        }
+
+        .btn-danger {
+            background: linear-gradient(180deg, #ee4444, #b91c1c);
+            border-color: rgba(248, 113, 113, .55);
         }
 
         // Remove the outline on buttons
         button:focus {
             outline: 0;
+        }
+    }
+}
+
+@media (max-width: 1380px) {
+    .status-strip {
+        min-width: 360px;
+    }
+
+    .status-block {
+        min-width: 120px;
+        padding: 11px 12px;
+    }
+
+    .quick-access-toolbar {
+        :global {
+            .btn {
+                min-width: 82px;
+                padding: 8px 9px;
+            }
         }
     }
 }

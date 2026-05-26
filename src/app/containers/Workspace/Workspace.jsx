@@ -1,26 +1,19 @@
 import _ from 'lodash';
 import classNames from 'classnames';
-import Dropzone from 'react-dropzone';
 import pubsub from 'pubsub-js';
 import React, { PureComponent } from 'react';
 import ReactDOM from 'react-dom';
 import { withRouter } from 'react-router-dom';
-import { Button, ButtonGroup, ButtonToolbar } from 'app/components/Buttons';
 import api from 'app/api';
-import {
-  WORKFLOW_STATE_IDLE
-} from 'app/constants';
 import controller from 'app/lib/controller';
 import i18n from 'app/lib/i18n';
 import log from 'app/lib/log';
 import store from 'app/store';
 import * as widgetManager from './WidgetManager';
-import DefaultWidgets from './DefaultWidgets';
-import PrimaryWidgets from './PrimaryWidgets';
-import SecondaryWidgets from './SecondaryWidgets';
 import FeederPaused from './modals/FeederPaused';
 import FeederWait from './modals/FeederWait';
 import ServerDisconnected from './modals/ServerDisconnected';
+import ControlDeck from './ControlDeck';
 import styles from './index.styl';
 import {
   MODAL_NONE,
@@ -373,24 +366,13 @@ class Workspace extends PureComponent {
 
     componentDidMount() {
       this.addControllerEvents();
-      this.addResizeEventListener();
-
-      setTimeout(() => {
-        // A workaround solution to trigger componentDidUpdate on initial render
-        this.setState({ mounted: true });
-      }, 0);
     }
 
     componentWillUnmount() {
       this.removeControllerEvents();
-      this.removeResizeEventListener();
     }
 
     componentDidUpdate() {
-      store.set('workspace.container.primary.show', this.state.showPrimaryContainer);
-      store.set('workspace.container.secondary.show', this.state.showSecondaryContainer);
-
-      this.resizeDefaultContainer();
     }
 
     addControllerEvents() {
@@ -422,14 +404,8 @@ class Workspace extends PureComponent {
       const {
         port,
         modal,
-        isDraggingFile,
-        isDraggingWidget,
-        showPrimaryContainer,
-        showSecondaryContainer,
-        inactiveCount
+        isDraggingFile
       } = this.state;
-      const hidePrimaryContainer = !showPrimaryContainer;
-      const hideSecondaryContainer = !showSecondaryContainer;
 
       return (
         <div style={style} className={classNames(className, styles.workspace)}>
@@ -459,267 +435,7 @@ class Workspace extends PureComponent {
               {i18n._('Drop G-code file here')}
             </div>
           </div>
-          <Dropzone
-            className={styles.dropzone}
-            disabled={controller.workflow.state !== WORKFLOW_STATE_IDLE}
-            disableClick={true}
-            disablePreview={true}
-            multiple={false}
-            onDragStart={(event) => {
-            }}
-            onDragEnter={(event) => {
-              if (controller.workflow.state !== WORKFLOW_STATE_IDLE) {
-                return;
-              }
-              if (isDraggingWidget) {
-                return;
-              }
-              if (!isDraggingFile) {
-                this.setState({ isDraggingFile: true });
-              }
-            }}
-            onDragLeave={(event) => {
-              if (controller.workflow.state !== WORKFLOW_STATE_IDLE) {
-                return;
-              }
-              if (isDraggingWidget) {
-                return;
-              }
-              if (isDraggingFile) {
-                this.setState({ isDraggingFile: false });
-              }
-            }}
-            onDrop={(acceptedFiles, rejectedFiles) => {
-              if (controller.workflow.state !== WORKFLOW_STATE_IDLE) {
-                return;
-              }
-              if (isDraggingWidget) {
-                return;
-              }
-              if (isDraggingFile) {
-                this.setState({ isDraggingFile: false });
-              }
-              this.onDrop(acceptedFiles);
-            }}
-          >
-            <div className={styles.workspaceTable}>
-              <div className={styles.workspaceTableRow}>
-                <div
-                  ref={node => {
-                    this.primaryContainer = node;
-                  }}
-                  className={classNames(
-                    styles.primaryContainer,
-                    { [styles.hidden]: hidePrimaryContainer }
-                  )}
-                >
-                  <ButtonToolbar style={{ margin: '5px 0' }}>
-                    <ButtonGroup
-                      style={{ marginLeft: 0, marginRight: 10 }}
-                      btnSize="sm"
-                      btnStyle="flat"
-                    >
-                      <Button
-                        aria-label="Hide left panel"
-                        style={{ minWidth: 30 }}
-                        compact
-                        onClick={this.togglePrimaryContainer}
-                      >
-                        <i aria-hidden="true" className="fa fa-chevron-left" />
-                      </Button>
-                    </ButtonGroup>
-                    <ButtonGroup
-                      style={{ marginLeft: 0, marginRight: 10 }}
-                      btnSize="sm"
-                      btnStyle="flat"
-                    >
-                      <Button
-                        style={{ width: 230 }}
-                        onClick={this.updateWidgetsForPrimaryContainer}
-                      >
-                        <i aria-hidden="true" className="fa fa-list-alt" />
-                        {i18n._('Manage Widgets ({{inactiveCount}})', {
-                          inactiveCount: inactiveCount
-                        })}
-                      </Button>
-                    </ButtonGroup>
-                    <ButtonGroup
-                      style={{ marginLeft: 0, marginRight: 0 }}
-                      btnSize="sm"
-                      btnStyle="flat"
-                    >
-                      <Button
-                        aria-label="Collapse all left panel widgets"
-                        style={{ minWidth: 30 }}
-                        compact
-                        title={i18n._('Collapse All')}
-                        onClick={event => {
-                          this.primaryWidgets.collapseAll();
-                        }}
-                      >
-                        <i aria-hidden="true" className="fa fa-chevron-up" style={{ fontSize: 14 }} />
-                      </Button>
-                      <Button
-                        aria-label="Expand all left panel widgets"
-                        style={{ minWidth: 30 }}
-                        compact
-                        title={i18n._('Expand All')}
-                        onClick={event => {
-                          this.primaryWidgets.expandAll();
-                        }}
-                      >
-                        <i aria-hidden="true" className="fa fa-chevron-down" style={{ fontSize: 14 }} />
-                      </Button>
-                    </ButtonGroup>
-                  </ButtonToolbar>
-                  <PrimaryWidgets
-                    ref={node => {
-                      this.primaryWidgets = node;
-                    }}
-                    onForkWidget={this.widgetEventHandler.onForkWidget}
-                    onRemoveWidget={this.widgetEventHandler.onRemoveWidget}
-                    onDragStart={this.widgetEventHandler.onDragStart}
-                    onDragEnd={this.widgetEventHandler.onDragEnd}
-                  />
-                </div>
-                {hidePrimaryContainer && (
-                  <div
-                    ref={node => {
-                      this.primaryToggler = node;
-                    }}
-                    className={styles.primaryToggler}
-                  >
-                    <ButtonGroup
-                      btnSize="sm"
-                      btnStyle="flat"
-                    >
-                      <Button
-                        aria-label="Show left panel"
-                        style={{ minWidth: 30 }}
-                        compact
-                        onClick={this.togglePrimaryContainer}
-                      >
-                        <i aria-hidden="true" className="fa fa-chevron-right" />
-                      </Button>
-                    </ButtonGroup>
-                  </div>
-                )}
-                <div
-                  ref={node => {
-                    this.defaultContainer = node;
-                  }}
-                  className={classNames(
-                    styles.defaultContainer,
-                    styles.fixed
-                  )}
-                >
-                  <DefaultWidgets />
-                </div>
-                {hideSecondaryContainer && (
-                  <div
-                    ref={node => {
-                      this.secondaryToggler = node;
-                    }}
-                    className={styles.secondaryToggler}
-                  >
-                    <ButtonGroup
-                      btnSize="sm"
-                      btnStyle="flat"
-                    >
-                      <Button
-                        aria-label="Show right panel"
-                        style={{ minWidth: 30 }}
-                        compact
-                        onClick={this.toggleSecondaryContainer}
-                      >
-                        <i aria-hidden="true" className="fa fa-chevron-left" />
-                      </Button>
-                    </ButtonGroup>
-                  </div>
-                )}
-                <div
-                  ref={node => {
-                    this.secondaryContainer = node;
-                  }}
-                  className={classNames(
-                    styles.secondaryContainer,
-                    { [styles.hidden]: hideSecondaryContainer }
-                  )}
-                >
-                  <ButtonToolbar style={{ margin: '5px 0' }}>
-                    <div className="pull-left">
-                      <ButtonGroup
-                        style={{ marginLeft: 0, marginRight: 10 }}
-                        btnSize="sm"
-                        btnStyle="flat"
-                      >
-                        <Button
-                          aria-label="Collapse all right panel widgets"
-                          style={{ minWidth: 30 }}
-                          compact
-                          title={i18n._('Collapse All')}
-                          onClick={event => {
-                            this.secondaryWidgets.collapseAll();
-                          }}
-                        >
-                          <i aria-hidden="true" className="fa fa-chevron-up" style={{ fontSize: 14 }} />
-                        </Button>
-                        <Button
-                          aria-label="Expand all right panel widgets"
-                          style={{ minWidth: 30 }}
-                          compact
-                          title={i18n._('Expand All')}
-                          onClick={event => {
-                            this.secondaryWidgets.expandAll();
-                          }}
-                        >
-                          <i aria-hidden="true" className="fa fa-chevron-down" style={{ fontSize: 14 }} />
-                        </Button>
-                      </ButtonGroup>
-                      <ButtonGroup
-                        style={{ marginLeft: 0, marginRight: 10 }}
-                        btnSize="sm"
-                        btnStyle="flat"
-                      >
-                        <Button
-                          style={{ width: 230 }}
-                          onClick={this.updateWidgetsForSecondaryContainer}
-                        >
-                          <i aria-hidden="true" className="fa fa-list-alt" />
-                          {i18n._('Manage Widgets ({{inactiveCount}})', {
-                            inactiveCount: inactiveCount
-                          })}
-                        </Button>
-                      </ButtonGroup>
-                      <ButtonGroup
-                        style={{ marginLeft: 0, marginRight: 0 }}
-                        btnSize="sm"
-                        btnStyle="flat"
-                      >
-                        <Button
-                          aria-label="Hide right panel"
-                          style={{ minWidth: 30 }}
-                          compact
-                          onClick={this.toggleSecondaryContainer}
-                        >
-                          <i aria-hidden="true" className="fa fa-chevron-right" />
-                        </Button>
-                      </ButtonGroup>
-                    </div>
-                  </ButtonToolbar>
-                  <SecondaryWidgets
-                    ref={node => {
-                      this.secondaryWidgets = node;
-                    }}
-                    onForkWidget={this.widgetEventHandler.onForkWidget}
-                    onRemoveWidget={this.widgetEventHandler.onRemoveWidget}
-                    onDragStart={this.widgetEventHandler.onDragStart}
-                    onDragEnd={this.widgetEventHandler.onDragEnd}
-                  />
-                </div>
-              </div>
-            </div>
-          </Dropzone>
+          <ControlDeck />
         </div>
       );
     }

@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
-import Space from 'app/components/Space';
 import controller from 'app/lib/controller';
 import i18n from 'app/lib/i18n';
 import styles from './index.styl';
@@ -39,23 +38,21 @@ class QuickAccessToolbar extends PureComponent {
             <li className="btn-group btn-group-sm" role="group">
               <button
                 type="button"
-                className="btn btn-default"
+                className="btn btn-success"
                 onClick={this.command.cyclestart}
                 title={i18n._('Cycle Start')}
               >
                 <i aria-hidden="true" className="fa fa-repeat" />
-                <Space width="8" />
-                {i18n._('Cycle Start')}
+                <span>{i18n._('Cycle Start')}</span>
               </button>
               <button
                 type="button"
-                className="btn btn-default"
+                className="btn btn-warning"
                 onClick={this.command.feedhold}
                 title={i18n._('Feedhold')}
               >
                 <i aria-hidden="true" className="fa fa-hand-paper-o" />
-                <Space width="8" />
-                {i18n._('Feedhold')}
+                <span>{i18n._('Feedhold')}</span>
               </button>
             </li>
             <li className="btn-group btn-group-sm" role="group">
@@ -66,8 +63,7 @@ class QuickAccessToolbar extends PureComponent {
                 title={i18n._('Homing')}
               >
                 <i aria-hidden="true" className="fa fa-home" />
-                <Space width="8" />
-                {i18n._('Homing')}
+                <span>{i18n._('Homing')}</span>
               </button>
               <button
                 type="button"
@@ -76,8 +72,7 @@ class QuickAccessToolbar extends PureComponent {
                 title={i18n._('Sleep')}
               >
                 <i aria-hidden="true" className="fa fa-bed" />
-                <Space width="8" />
-                {i18n._('Sleep')}
+                <span>{i18n._('Sleep')}</span>
               </button>
               <button
                 type="button"
@@ -86,8 +81,7 @@ class QuickAccessToolbar extends PureComponent {
                 title={i18n._('Unlock')}
               >
                 <i aria-hidden="true" className="fa fa-unlock-alt" />
-                <Space width="8" />
-                {i18n._('Unlock')}
+                <span>{i18n._('Unlock')}</span>
               </button>
               <button
                 type="button"
@@ -96,8 +90,7 @@ class QuickAccessToolbar extends PureComponent {
                 title={i18n._('Reset')}
               >
                 <i aria-hidden="true" className="fa fa-undo" />
-                <Space width="8" />
-                {i18n._('Reset')}
+                <span>{i18n._('Reset')}</span>
               </button>
             </li>
           </ul>

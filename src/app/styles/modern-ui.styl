@@ -1,0 +1,300 @@
+/* Dark control-deck skin for the CNCjs frontend. */
+
+:root {
+    --cnc-bg: #07111f;
+    --cnc-bg-strong: #050b15;
+    --cnc-panel: #0d1c31;
+    --cnc-panel-soft: #10233c;
+    --cnc-border: rgba(82, 112, 154, .32);
+    --cnc-border-strong: rgba(88, 166, 255, .48);
+    --cnc-text: #dbe8ff;
+    --cnc-text-strong: #f8fbff;
+    --cnc-muted: #8fa4c0;
+    --cnc-blue: #2f81f7;
+    --cnc-green: #21d982;
+    --cnc-orange: #f28a13;
+    --cnc-red: #ef4444;
+}
+
+html,
+body {
+    min-height: 100%;
+    background: var(--cnc-bg-strong) !important;
+    color: var(--cnc-text);
+}
+
+body,
+input,
+button,
+select,
+textarea {
+    font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+a {
+    color: #58a6ff;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(5, 11, 21, .35);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(88, 166, 255, .28);
+    border: 2px solid rgba(5, 11, 21, .35);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(88, 166, 255, .44);
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.control-label {
+    color: var(--cnc-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+.form-control,
+input[type="text"],
+input[type="number"],
+input[type="password"],
+select,
+textarea {
+    color: var(--cnc-text-strong) !important;
+    background: rgba(5, 12, 23, .74) !important;
+    border: 1px solid var(--cnc-border) !important;
+    border-radius: 5px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03) !important;
+}
+
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--cnc-border-strong) !important;
+    box-shadow: 0 0 0 2px rgba(47, 129, 247, .18) !important;
+    outline: 0 !important;
+}
+
+.input-group-addon {
+    color: var(--cnc-muted);
+    background: rgba(15, 35, 60, .86);
+    border-color: var(--cnc-border);
+}
+
+.btn {
+    border-radius: 5px !important;
+    font-weight: 700 !important;
+}
+
+.btn-default {
+    color: var(--cnc-text) !important;
+    background: linear-gradient(180deg, #13243d, #0a1729) !important;
+    border-color: var(--cnc-border) !important;
+}
+
+.btn-default:hover,
+.btn-default:focus {
+    color: var(--cnc-text-strong) !important;
+    background: linear-gradient(180deg, #183258, #10233c) !important;
+    border-color: var(--cnc-border-strong) !important;
+}
+
+.btn-primary {
+    color: #fff !important;
+    background: linear-gradient(180deg, #1269dc, #0d47a1) !important;
+    border-color: rgba(88, 166, 255, .46) !important;
+}
+
+.btn-success {
+    color: #fff !important;
+    background: linear-gradient(180deg, #10b86b, #05894d) !important;
+    border-color: rgba(42, 226, 133, .45) !important;
+}
+
+.btn-warning {
+    color: #fff !important;
+    background: linear-gradient(180deg, #f28a13, #c75a04) !important;
+    border-color: rgba(251, 146, 60, .55) !important;
+}
+
+.btn-danger {
+    color: #fff !important;
+    background: linear-gradient(180deg, #ee4444, #b91c1c) !important;
+    border-color: rgba(248, 113, 113, .55) !important;
+}
+
+.btn-flat {
+    color: var(--cnc-muted) !important;
+    background: rgba(15, 35, 60, .48) !important;
+    border-color: var(--cnc-border) !important;
+}
+
+.btn-flat:hover,
+.btn-flat:focus {
+    color: var(--cnc-text-strong) !important;
+    background: rgba(47, 129, 247, .16) !important;
+}
+
+.btn-select,
+.btn.active {
+    color: #fff !important;
+    background: rgba(47, 129, 247, .28) !important;
+    border-color: var(--cnc-border-strong) !important;
+}
+
+.dropdown-menu {
+    padding: 6px 0;
+    background: #0b1728;
+    border: 1px solid var(--cnc-border);
+    border-radius: 6px;
+    box-shadow: 0 20px 38px rgba(0, 0, 0, .38);
+}
+
+.dropdown-menu > li > a,
+.dropdown-menu > li > button {
+    color: var(--cnc-text);
+}
+
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+    color: var(--cnc-text-strong);
+    background: rgba(47, 129, 247, .14);
+}
+
+.dropdown-menu .divider {
+    background-color: rgba(82, 112, 154, .25);
+}
+
+.dropdown-header {
+    color: var(--cnc-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+.table,
+table {
+    color: var(--cnc-text);
+}
+
+.table > thead > tr > th,
+table thead th {
+    color: var(--cnc-muted);
+    background: rgba(9, 20, 36, .8);
+    border-bottom-color: var(--cnc-border) !important;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.table > tbody > tr > td,
+table tbody td {
+    border-top-color: rgba(82, 112, 154, .18) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, .025);
+}
+
+.panel,
+.panel-default {
+    color: var(--cnc-text);
+    background: transparent !important;
+    border-color: var(--cnc-border) !important;
+}
+
+.panel-heading {
+    color: var(--cnc-text-strong) !important;
+    background: rgba(15, 35, 60, .82) !important;
+    border-color: var(--cnc-border) !important;
+}
+
+.well {
+    color: var(--cnc-text-strong);
+    background: rgba(5, 12, 23, .74);
+    border-color: var(--cnc-border);
+    border-radius: 5px;
+    box-shadow: inset 0 1px 8px rgba(0, 0, 0, .22);
+}
+
+.Select-control {
+    color: var(--cnc-text-strong) !important;
+    background: rgba(5, 12, 23, .74) !important;
+    border-color: var(--cnc-border) !important;
+    border-radius: 5px !important;
+}
+
+.Select-placeholder,
+.Select--single > .Select-control .Select-value {
+    color: var(--cnc-muted) !important;
+}
+
+.Select-menu-outer {
+    background: #0b1728 !important;
+    border-color: var(--cnc-border) !important;
+    border-radius: 0 0 5px 5px !important;
+}
+
+.Select-option {
+    color: var(--cnc-text);
+    background: transparent !important;
+}
+
+.Select-option.is-focused {
+    background: rgba(47, 129, 247, .16) !important;
+}
+
+.Select-option.is-selected {
+    background: rgba(47, 129, 247, .28) !important;
+}
+
+.modal-content {
+    color: var(--cnc-text);
+    background: #0b1728;
+    border: 1px solid var(--cnc-border);
+    border-radius: 6px;
+    box-shadow: 0 28px 60px rgba(0, 0, 0, .55);
+}
+
+.modal-header,
+.modal-footer {
+    border-color: rgba(82, 112, 154, .22);
+}
+
+.modal-title {
+    color: var(--cnc-text-strong);
+}
+
+.label-primary {
+    background-color: var(--cnc-blue);
+}
+
+.label-success {
+    background-color: #06945c;
+}
+
+.label-warning {
+    background-color: var(--cnc-orange);
+}
+
+.label-danger {
+    background-color: var(--cnc-red);
+}
+
+.text-muted {
+    color: var(--cnc-muted);
+}
