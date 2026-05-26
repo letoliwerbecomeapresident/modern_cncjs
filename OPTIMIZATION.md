@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-26, decyzje + P1.1 in progress)
+## Status realizacji (ostatnia aktualizacja: 2026-05-26, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -17,7 +17,17 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 - **P2.1** — `moment` → `dayjs` w 8 plikach + bootstrap z pluginami w `src/app/lib/dayjs.js` (`duration`, `isSameOrAfter`, `isSameOrBefore`, `localizedFormat`). `bundle-loader!moment/locale/*` zastąpione `import('dayjs/locale/${locale}.js')`. `ContextReplacementPlugin` ograniczony do locale z `build.config.languages`. `moment` + `bundle-loader` usunięte z deps.
 - **P2.2** — `import _ from 'lodash'` cherry-pickowany w 12 plikach `src/app/**` na `import get from 'lodash/get'` itp. Plugin `babel-plugin-lodash` zostaje (`src/server/**` nadal go używa). **Bundle output bez zmian** — plugin już wcześniej cherry-pickował automatycznie. Korzyść: deterministyczność, audytowalność, gotowość pod usunięcie pluginu.
 - **P1.1** — Lazy-load VisualizerPanel (ControlDeck) przez `LazyVisualizerPanel.jsx` z dynamic `import(/* webpackChunkName: "visualizer" */ './VisualizerPanel')`. React 15.6 — ręczny class wrapper. `webpack.config.production.js`: dodane `output.chunkFilename: '[name].[contenthash].bundle.js'` (async chunki dostają contenthash + są precompresowane brotli/gzip). Three.js (`vendor.three` 518 KB raw / 105 KB brotli) i kod Visualizer (`visualizer.<hash>.bundle.js` 199 KB raw / 45 KB brotli) **przesunięte z initial do async**.
+- **Cleanup Workspace.jsx** — usunięto 276 linii dead code'u widget management: imports `widgetManager`/`ReactDOM`/`pubsub`/`api`/`log`/`store`/`throttle`/`difference`/`pick`/`pullAll`/`size`, state `port`/`isDraggingFile`/`isDraggingWidget`/`isUploading`/`showPrimaryContainer`/`showSecondaryContainer`/`inactiveCount`, refs `primaryContainer`/`secondaryContainer`/`primaryToggler`/`secondaryToggler`/`primaryWidgets`/`secondaryWidgets`/`defaultContainer`/`sortableGroup`, metody `togglePrimaryContainer`/`toggleSecondaryContainer`/`resizeDefaultContainer`/`add/removeResizeEventListener`/`updateWidgetsFor{Primary,Secondary}Container`/`onDrop`/`startWaiting`/`stopWaiting`, `widgetEventHandler`, dropzone overlay (zawsze hidden), `serialport:open/close` (tylko `port`). Zostaje: rendering ControlDeck, modały Feeder/ServerDisconnected, `controllerEvents` (`connect`/`connect_error`/`disconnect`/`feeder:status`), `action.openModal/closeModal`. Plik 449 → 173 linii. Otwiera drogę do P1.3 (kasacja `PrimaryWidgets.jsx`/`SecondaryWidgets.jsx`/`WidgetManager/`).
+- **P1.3** — Kasacja 14 klasycznych widgetów + orchestration. Usunięte: katalogi `src/app/widgets/{Autolevel,Axes,Custom,GCode,Grbl,Laser,Macro,Marlin,Probe,Smoothie,Spindle,TinyG,Tool,Webcam}` (162 plików) + `src/app/containers/Workspace/{Widget.jsx,DefaultWidgets.jsx,PrimaryWidgets.jsx,SecondaryWidgets.jsx,widgets.styl,WidgetManager/}`. Pozostały tylko widgety używane przez ControlDeck: `Connection`, `Console`, `Visualizer`, `WidgetConfig.js`. Audyt zależności: wszystkie zewnętrzne importy widgetów szły przez jeden choke point `containers/Workspace/Widget.jsx`, zachowane widgety nie mają cross-imports do skasowanych. `defaultState.widgets` odchudzony z 17 do 3 entries (connection/console/visualizer), `workspace.container.{primary,secondary}.widgets` → `[]`. Build przeszedł czysto.
+- **Hygiene tail po P1.3** — wyczyszczone wszystkie referencje do skasowanych widgetów w wsparciu runtime'u:
+  - `src/app/store/index.js`: skasowane `normalizeState()` (logika reorderowania primary/secondary widget lists + preserve `widgets.axes.axes` — wszystko dead) oraz `migrateStore()` (migracje 1.9.0/1.9.13/1.9.16/1.10.0 dotyczące tylko skasowanych widgetów `probe`/`axes`/`webcam`). Usunięte imports: `ensureArray`, `difference`, `uniq`, `semver`. Plik 198 → 80 linii. Inicjalizacja store'u skondensowana do `store.state = merge({}, defaultState, cnc.state || {})`.
+  - `src/app/containers/Workspace/index.styl`: 112 linii sierot CSS (`.dropzone-overlay`, `.primary/secondary-container`, `.primary/secondary-toggler`, `.default-container`, `.workspace-table*`, `.dropzone`, `@import "../variables"`) → 3 linie (pusty marker `.workspace {}`).
+  - `src/app/i18n/*/resource.json`: **już auto-cleaned** przez `yarn build` (i18next-scanner `removeUnusedKeys: true` dla namespace `resource`). Wszystkie 17 języków na 295 kluczy każdy.
 - **P2.3** — `jimp` usunięty z deps (nieużywany).
+- **P4.1 + P4.2** — Systemd unit + heap cap dla Pi: `deploy/raspberry-pi/cncjs.service` (User=pi, Restart=on-failure, journald, `NODE_OPTIONS=--max-old-space-size=256` + `MemoryMax=384M` jako default pod Pi Zero W, z komentarzami dla 3B+/Pi 4) + `deploy/raspberry-pi/README.md` (instalacja, tabela tuning per-platforma, journald rotation, tmpfs `/tmp`, diagnostyka `pmap`/`htop`/`iostat`). Bez zmian w kodzie aplikacji — czysta konfiguracja deploymentu.
+- **P3.2** — Throttle hot Socket.IO eventów (`controller:state`, `sender:status`) do 10 Hz przy źródle w `src/app/lib/controller/Controller.js`. Implementacja przez `lodash/throttle` (100 ms, `leading: true, trailing: true`) — pierwszy event w oknie idzie natychmiast, ostatni gwarantowany przez trailing edge. Internal `this.state`/`this.settings`/`this.type` aktualizowane synchronicznie (nie throttled), więc `controller.state` read zawsze widzi najnowsze dane; tylko fan-out do listenerów ograniczony. Cleanup throttle callbacks w `disconnect()` i rebuild przy `connect()`. Konsumenci: ControlDeck (panele), Header, Visualizer — wszyscy używają tych eventów do display rerenderów, 10 Hz cap nikomu nie szkodzi.
+- **P3.4** — Batchowanie xterm writes w `widgets/Console/index.jsx`. `serialport:read` events kolekowane do `_readBuffer`, flush co 50 ms (20 Hz) przez nową metodę `Terminal.writeBatch(lines)` (jeden xterm parser call zamiast N — jeden `eraseRight`/`write`/`prompt` cykl dla całej paczki). Cap 500 linii na okno (xterm `scrollback: 1000` i tak by je obciął przy renderze — odcina pathological backlogi z reconnectów). Cleanup timer w `componentWillUnmount`. Bufor xterm nie był nigdy unbounded (plan zakładał to mylnie — `scrollback: 1000` jest tu od początku), realny win to redukcja N→1 xterm parser calls per okno czasowe.
+- **P2.5** — `xterm` (3.0.2, ~136 KB raw / 26 KB brotli w `vendor.misc`) zastąpiony własnym DOM-based terminalem w `src/app/widgets/Console/Terminal.jsx`. Stara klasa była 435 linii oparta o xterm + `xterm/lib/addons/fit` + `perfect-scrollbar` (skin pionowego scrollbara). Nowa wersja (~290 linii) ma identyczne public API używane przez `index.jsx` i `Console.jsx`: `clear()`, `writeln(line)`, `writeBatch(lines)`, `resize()` (no-op — DOM layout flow), `selectAll()`/`clearSelection()` przez `window.getSelection() + Range`, oraz pole `prompt` (`'> '`). Wejście użytkownika przez `<input type="text">` z historią (reuse istniejącego `History.js`), `Enter`/`ArrowUp`/`ArrowDown`/`Escape`, multi-line paste (każda linia → osobny `onData`), Ctrl/Meta + litera → raw kontrolny char (parity z Ctrl+X dla Grbl reset). Kolory z `chalk` zachowane przez minimalny SGR parser (~30 linii) obsługujący kody 0/1/22/39 + 30-37/90-97; każdy segment renderowany jako `<span>` z CSS class. Auto-scroll only-when-at-bottom (`_followBottom` flaga z `handleScroll`). Usunięte deps: `xterm`, `perfect-scrollbar`. Usunięte pliki: `src/app/styles/xterm.styl`, `src/app/styles/perfect-scrollbar.styl`. `src/app/styles/vendor.styl` bez `@import` do nich. Style nowego terminala dopisane do `src/app/widgets/Console/index.styl` (kolory ANSI fallback z palety solarized-ish, flex layout, `border-top` separator między output a input row).
 - **P4.3** — Google Analytics wyłączone (`trackingId: ''` w `build.config.js` + guard w `src/app/index.jsx:104`).
 - **P5.2** — `immutable: true` w `serveStatic` opcjach (`src/server/app.js`).
 - **P6.1** — `webpack-bundle-analyzer` pod flagą `ANALYZE=1 yarn build` → raport `dist/cncjs/bundle-report.html`. Dodane devDep: `webpack-bundle-analyzer`.
@@ -52,16 +62,55 @@ Po P1.1 (lazy VisualizerPanel):
 - Async (ładowane przy pierwszym mount VisualizerPanel): vendor.three 105 KB brotli + visualizer 45 KB brotli = **151 KB brotli odłożone z initial**
 - Drugi load (cache vendorów): teoretycznie tylko `main` + `runtime` zmieniają hashe → ~55 KB brotli
 
+Po Cleanup Workspace.jsx:
+- **Initial brotli: ~342 KB** (vs ~354 KB po P1.1) = dodatkowe **−12 KB** (−3,4%)
+- Główny wpływ: `main` 50 KB (−3 KB) + `vendor.misc` 189 KB (−2 KB). Reszta chunków bez zmian.
+- Kumulatywnie vs baseline 651 KB gzip: **−47% w brotli**, ~342 KB initial JS brotli (plus ~42 KB CSS brotli = ~384 KB initial total).
+
+Po P1.3 (kasacja 14 widgetów):
+- **Bundle initial brotli: ~342 KB → ~342 KB** (faktycznie −500 B z `main`). Widgety były **już wcześniej tree-shake'owane** przez webpack po cleanupie Workspace.jsx — żaden moduł nie miał ścieżki do entry point. Hashe vendor.misc/react/lodash/i18next/trendmicro/dayjs niezmienione.
+- **`dist/cncjs/app/` całość: 8.1 MB → 7.7 MB** (−400 KB raw) — głównie z trimu i18n keys (`yarn build` regeneruje resource.json bez nieużywanych kluczy widgetów) i kilku assetów.
+- **Source tree:** `src/app/widgets/` 17 katalogów → 3 katalogi + 1 plik (162 plików mniej, ~70% kodu widgets/ wyczyszczone). `containers/Workspace/` z 19 plików → 13 plików.
+- **Realny zysk:** higiena (mniej plików do utrzymania, krótszy `yarn build`, mniej szumu w grep'ach/IDE), nie performance. Bundle był już de facto czysty — Workspace.jsx cleanup wcześniej odciął cały dependency graph do widgetów.
+
+Po hygiene tail:
+- `main.bundle.js` brotli: 49743 → 49407 (−336 B)
+- `main.css` brotli: 18413 → 18008 (−405 B)
+- `vendor.lodash` brotli: 12356 → 12346 (−10 B, mniejszy footprint po wycięciu importów `semver`/`ensureArray`/`uniq`/`difference`)
+- Pozostałe vendory bez zmian (hashe identyczne)
+- Suma initial JS brotli: **~341 KB** (kumulatywnie vs baseline 651 KB gzip: **−48% w brotli**)
+
+Po P3.2 + P3.4:
+- `main.bundle.js` brotli: 49407 → 49623 (+216 B — throttle dispatcher i batch loop)
+- `vendor.lodash` brotli: 12346 (bez zmian — `lodash/throttle` był już pulled przez `babel-plugin-lodash` na innym wywołaniu)
+- Pozostałe chunki: bez zmian
+- Suma initial JS brotli: **~342 KB** (kumulatywnie bez zmian)
+- **Bundle bez znaczącej zmiany — to runtime win, nie bundle win.** Realne efekty:
+  - `controller:state`/`sender:status` cap'owane do 10 Hz przed setState'ami w ControlDeck/Header/Visualizer. Na Pi Zero W jako headless display redukcja rerenderów React proporcjonalna do współczynnika throttlingu (kontrolery potrafią pchać 20–30 Hz; cap 10 Hz to 50–67% mniej rerenderów).
+  - `serialport:read` → 1 xterm parser call na 50 ms okno zamiast N. Przy burst 30 lines/s redukcja N→1 (cykl `eraseRight`/`write`/`prompt`/`scrollToBottom`).
+
+Po P2.5 (xterm → DOM terminal):
+- `vendor.misc` raw: 823 KB → 687 KB = **−136 KB raw** (xterm 3.0.2 + perfect-scrollbar 1.4.0)
+- `vendor.misc` brotli: 185 KB → 159 KB = **−26 KB brotli (−14%)**
+- `main.bundle.js` brotli: 49623 → 49946 (+323 B — kod nowego Terminal.jsx + SGR parser + style hash w manifeście CSS)
+- `main.css` brotli: 18019 → 18419 (+400 B — klasy `.terminal-output`/`.terminal-input-row`/`.terminal-input`/`.fg-*`/`.bold` netto większe niż usunięte 5 linii xterm.styl, bo perfect-scrollbar/xterm CSS lądowały w `vendor.misc.css` przez `@import url(~xterm/...)`)
+- `vendor.misc.css` brotli: ~24 KB → ~24 KB (xterm.css + perfect-scrollbar.css razem ~5 KB raw, w brotli marginalne — drobne fluctuacje rzędu setek B)
+- Suma initial JS brotli: 342 → **316 KB (−26 KB / −7,6%)**
+- Suma initial total brotli (JS + CSS): ~384 → **~358 KB**
+- Kumulatywnie vs baseline 651 KB gzip jeden chunk: **−52% w brotli** (316/651 = 48,5% pozostało)
+- Funkcjonalność zachowana: line editing, history (ArrowUp/Down), multi-line paste, Ctrl+letter → raw control char (Ctrl+X reset Grbl działa), kolory chalk (port `yellowBright`, baudrate `blueBright`, source `gray`, header `white bold`) przez minimalny ANSI SGR parser → CSS classes. Auto-scroll z follow-bottom detection (scroll-up zachowuje pozycję czytelnika).
+- Trade-off: utracone funkcje xterm: alt-screen mode, escape sequences inne niż SGR (cursor movement, screen clears wysyłane przez serwer) — żadne nie używane przez Grbl/Marlin/Smoothie/TinyG output. Selection model: native browser zamiast xterm — w praktyce wygodniejsze (kontekstowe menu, kopiowanie z natywnymi keyboard shortcuts).
+
 ### ⏭️ Do zrobienia w kolejności (rekomendacja dla Pi Zero W)
 
 Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i parsowanie w przeglądarce (front), potem runtime Node.
 
 1. ~~**P1.1** — Lazy-load VisualizerPanel (ControlDeck).~~ **Zrobione 2026-05-26** (−131 KB brotli z initial).
-2. **Cleanup Workspace.jsx** (nowy) — `Workspace.jsx` renderuje już tylko `<ControlDeck />`, ale trzyma ~250 linii nieużywanej logiki widget management (widgetManager imports, primary/secondary containers, sortableGroup, updateWidgetsFor*, resizeDefaultContainer, pubsub publish). Higiena, mały zysk JS, otwiera drogę do P1.3.
-3. **P1.3** — Kasacja klasycznych widgetów nieużywanych przez ControlDeck. Odblokowane. ControlDeck używa z `widgets/`: `Console`, `Connection`, `Visualizer`, `WidgetConfig`. Do kasacji (po weryfikacji że nikt inny nie importuje): **Autolevel, Axes, Custom, GCode, Grbl, Laser, Macro, Marlin, Probe, Smoothie, Spindle, TinyG, Tool, Webcam** + `WidgetManager/`, `PrimaryWidgets.jsx`, `SecondaryWidgets.jsx`, `DefaultWidgets.jsx`. Realnie 100–300 KB raw.
-4. **P4.1 + P4.2** — Pi-side systemd unit + `NODE_OPTIONS=--max-old-space-size=256` (dla Zero W zamiast 512). Sekcja 4.2.
-5. **P3.2 + P3.4** — Throttle eventów Socket.IO (10 Hz) + bufor konsoli (2000 linii). **Krytyczne dla Pi Zero W** — single-core ARMv6 nie wybacza spam'u rerenderów.
-6. **P2.5** — Wyrzucenie xterm. Wymaga przepisania `widgets/Console/Terminal.jsx` (używanego przez ControlDeck.ConsolePanel) na lekki własny terminal lub usunięcie ConsolePanel.
+2. ~~**Cleanup Workspace.jsx**~~ **Zrobione 2026-05-26** (449 → 173 linii, −12 KB brotli initial). Pozostaje sprzątanie CSS w `containers/Workspace/index.styl` (`.dropzone-overlay`, `.primary-container`, `.secondary-container`, `.primary-toggler`, `.secondary-toggler`, `.default-container`, `.workspace-table*`, `.dropzone` — wszystko bez aktywnych odwołań w JSX po cleanupie). Logiczniej zrobić razem z P1.3.
+3. ~~**P1.3** — Kasacja klasycznych widgetów~~ **Zrobione 2026-05-26** (162 plików, 14 katalogów + orchestration). Bundle initial bez zmian (już tree-shaken), `dist/` −400 KB, source tree masywnie czystszy.
+4. ~~**P4.1 + P4.2** — Pi-side systemd unit + `NODE_OPTIONS=--max-old-space-size=256`.~~ **Zrobione 2026-05-26** — `deploy/raspberry-pi/{cncjs.service,README.md}`.
+5. ~~**P3.2 + P3.4** — Throttle eventów Socket.IO (10 Hz) + batchowanie xterm writes.~~ **Zrobione 2026-05-26** — `Controller.js` throttle + `widgets/Console/{index.jsx,Terminal.jsx}` batch. Bufor konsoli już był capped przez xterm `scrollback: 1000` — plan miał błędne założenie; przerzucone na realny problem (N→1 parser calls per okno).
+6. ~~**P2.5** — Wyrzucenie xterm.~~ **Zrobione 2026-05-26** — DOM terminal w `widgets/Console/Terminal.jsx`, public API zachowany, kolory chalk parsowane przez SGR → CSS. `vendor.misc` −136 KB raw / −26 KB brotli. Initial JS brotli 342 → 316 KB.
 7. **P5.1** — Service Worker (workbox). Drugi load <100 ms, offline mode.
 8. **P4.6** — tmpfs dla `/var/log/cncjs/` i `/tmp` (oszczędność cykli zapisu microSD).
 9. **P2.4** — Font Awesome subset / migracja na `react-icons`. −~1.5 MB z `dist/` (assety).

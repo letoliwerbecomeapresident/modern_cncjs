@@ -17,6 +17,11 @@ import styles from './index.styl';
 const TERMINAL_COLS = 254;
 const TERMINAL_ROWS = 15;
 
+// Batch serialport:read writes into the terminal. 50 ms cap (20 Hz) keeps
+// Pi Zero W CPU usable during a stream; the terminal caps its own scrollback.
+const READ_BATCH_INTERVAL_MS = 50;
+const READ_BATCH_MAX = 500;
+
 class ConsoleWidget extends PureComponent {
     static propTypes = {
       widgetId: PropTypes.string.isRequired,
@@ -113,7 +118,16 @@ class ConsoleWidget extends PureComponent {
           return;
         }
 
-        this.terminal.writeln(data);
+        this._readBuffer.push(data);
+        // Terminal scrollback caps at 1000 lines; queuing more than ~500 per
+        // flush wastes parse work on lines that will scroll off immediately.
+        // Cap protects against pathological backlogs (reconnect spam).
+        if (this._readBuffer.length > READ_BATCH_MAX) {
+          this._readBuffer = this._readBuffer.slice(-READ_BATCH_MAX);
+        }
+        if (this._readFlushTimer === null) {
+          this._readFlushTimer = setTimeout(this._flushReadBuffer, READ_BATCH_INTERVAL_MS);
+        }
       }
     };
 
@@ -121,12 +135,33 @@ class ConsoleWidget extends PureComponent {
 
     pubsubTokens = [];
 
+    // Batched serialport:read pipeline — see handler above for rationale.
+    _readBuffer = [];
+
+    _readFlushTimer = null;
+
+    _flushReadBuffer = () => {
+      this._readFlushTimer = null;
+      if (!this.terminal || !this._readBuffer.length) {
+        this._readBuffer = [];
+        return;
+      }
+      const batch = this._readBuffer;
+      this._readBuffer = [];
+      this.terminal.writeBatch(batch);
+    };
+
     componentDidMount() {
       this.addControllerEvents();
       this.subscribe();
     }
 
     componentWillUnmount() {
+      if (this._readFlushTimer !== null) {
+        clearTimeout(this._readFlushTimer);
+        this._readFlushTimer = null;
+      }
+      this._readBuffer = [];
       this.removeControllerEvents();
       this.unsubscribe();
     }

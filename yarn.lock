@@ -8334,7 +8334,6 @@ __metadata:
     normalize.css: ~8.0.1
     opencollective: ~1.0.3
     path-browserify: ^1.0.1
-    perfect-scrollbar: ~1.4.0
     pre-push: ~0.1.1
     progress: ~2.0.3
     prop-types: ~15.7.2
@@ -8409,7 +8408,6 @@ __metadata:
     webpack-dev-server: ^5.1.0
     webpack-node-externals: ~1.7.2
     winston: ~3.14.1
-    xterm: ~3.0.2
   bin:
     cnc: ./bin/cnc
     cncjs: ./bin/cncjs
@@ -18275,13 +18273,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"perfect-scrollbar@npm:~1.4.0":
-  version: 1.4.0
-  resolution: "perfect-scrollbar@npm:1.4.0"
-  checksum: c0a290ff8612e0f18078d4b37af8ebcbd1605da2d14898de9800afdb78cf906bf2b7d37e070dfc767d86f5006079b63ac0a392f88e543fd81ca620ce47f67134
-  languageName: node
-  linkType: hard
-
 "performance-now@npm:^2.1.0":
   version: 2.1.0
   resolution: "performance-now@npm:2.1.0"
@@ -24350,13 +24341,6 @@ __metadata:
   version: 4.0.2
   resolution: "xtend@npm:4.0.2"
   checksum: ac5dfa738b21f6e7f0dd6e65e1b3155036d68104e67e5d5d1bde74892e327d7e5636a076f625599dc394330a731861e87343ff184b0047fef1360a7ec0a5a36a
-  languageName: node
-  linkType: hard
-
-"xterm@npm:~3.0.2":
-  version: 3.0.2
-  resolution: "xterm@npm:3.0.2"
-  checksum: 560b3de48eddc5c7ea8f790c26f57999c76690e7a27faf802fbe7f07126381aac99c5572c22338dec8080942d75088427e75ace89fcb3e00049aeb70f9be32fb
   languageName: node
   linkType: hard
 
