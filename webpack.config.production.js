@@ -91,6 +91,12 @@ module.exports = {
             options: {
               localsConvention: 'camelCase',
               modules: false,
+              url: (url) => {
+                if (/fontawesome-webfont\.(eot|ttf|svg|woff)([?#]|$)/.test(url)) {
+                  return false;
+                }
+                return true;
+              },
             }
           },
           'stylus-loader',
