@@ -56,15 +56,36 @@ MaxRetentionSec=30day
 
 `sudo systemctl restart systemd-journald` po zmianie.
 
-## tmpfs dla `/tmp` (oszczednosc cykli zapisu microSD)
+## tmpfs (oszczednosc cykli zapisu microSD)
+
+Karta SD znosi ~100k cykli zapisu na komorke. cncjs pisze w trzy miejsca poza dist/:
+
+| Sciezka                    | Co tam jest                              | Czestotliwosc zapisu              |
+|----------------------------|------------------------------------------|-----------------------------------|
+| `/tmp`                     | uploady G-code (multiparty), tmp i18next | sporadyczne, malo bajtow          |
+| `~/.cncjs-sessions/`       | session-file-store (express-session)     | **na kazdy request HTTP** (resave:true) |
+| journald (`/var/log/journal/`) | logi cncjs (stdout/stderr)               | per-event, ale z compaction       |
+
+`journald` ma wbudowany SystemMaxUse/rotation, wiec to jest OK. Sesje sa hot path — **kazdy** request UI zapisuje plik sesji. Warto na tmpfs.
 
 Dopisz do `/etc/fstab`:
 
 ```
-tmpfs   /tmp    tmpfs   defaults,noatime,nosuid,size=64M    0  0
+tmpfs   /tmp                     tmpfs   defaults,noatime,nosuid,size=64M  0  0
+tmpfs   /home/pi/.cncjs-sessions tmpfs   defaults,noatime,nosuid,uid=pi,gid=pi,mode=700,size=16M  0  0
 ```
 
-Reboot. Dla Pi Zero W `size=64M` to bezpieczny rozmiar.
+Reboot. `size=64M` dla `/tmp` to bezpieczny rozmiar pod uploady G-code do ~50 MB. `size=16M` dla sesji w zupelnosci wystarcza (kazda sesja to par KB). `uid/gid=pi` zeby user `pi` mial wlasciciela katalogu.
+
+**Uwaga:** sesje sa ulotne — restart Pi = wszyscy uzytkownicy musza sie zalogowac ponownie. Dla warsztatowego single-user setupu bez znaczenia.
+
+Sprawdzenie po reboocie:
+
+```bash
+mount | grep tmpfs
+# spodziewane: tmpfs on /tmp type tmpfs (...)
+#              tmpfs on /home/pi/.cncjs-sessions type tmpfs (...)
+```
 
 ## Diagnostyka
 
