@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-26, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5)
+## Status realizacji (ostatnia aktualizacja: 2026-05-27, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -29,6 +29,36 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 - **P3.4** — Batchowanie xterm writes w `widgets/Console/index.jsx`. `serialport:read` events kolekowane do `_readBuffer`, flush co 50 ms (20 Hz) przez nową metodę `Terminal.writeBatch(lines)` (jeden xterm parser call zamiast N — jeden `eraseRight`/`write`/`prompt` cykl dla całej paczki). Cap 500 linii na okno (xterm `scrollback: 1000` i tak by je obciął przy renderze — odcina pathological backlogi z reconnectów). Cleanup timer w `componentWillUnmount`. Bufor xterm nie był nigdy unbounded (plan zakładał to mylnie — `scrollback: 1000` jest tu od początku), realny win to redukcja N→1 xterm parser calls per okno czasowe.
 - **P2.5** — `xterm` (3.0.2, ~136 KB raw / 26 KB brotli w `vendor.misc`) zastąpiony własnym DOM-based terminalem w `src/app/widgets/Console/Terminal.jsx`. Stara klasa była 435 linii oparta o xterm + `xterm/lib/addons/fit` + `perfect-scrollbar` (skin pionowego scrollbara). Nowa wersja (~290 linii) ma identyczne public API używane przez `index.jsx` i `Console.jsx`: `clear()`, `writeln(line)`, `writeBatch(lines)`, `resize()` (no-op — DOM layout flow), `selectAll()`/`clearSelection()` przez `window.getSelection() + Range`, oraz pole `prompt` (`'> '`). Wejście użytkownika przez `<input type="text">` z historią (reuse istniejącego `History.js`), `Enter`/`ArrowUp`/`ArrowDown`/`Escape`, multi-line paste (każda linia → osobny `onData`), Ctrl/Meta + litera → raw kontrolny char (parity z Ctrl+X dla Grbl reset). Kolory z `chalk` zachowane przez minimalny SGR parser (~30 linii) obsługujący kody 0/1/22/39 + 30-37/90-97; każdy segment renderowany jako `<span>` z CSS class. Auto-scroll only-when-at-bottom (`_followBottom` flaga z `handleScroll`). Usunięte deps: `xterm`, `perfect-scrollbar`. Usunięte pliki: `src/app/styles/xterm.styl`, `src/app/styles/perfect-scrollbar.styl`. `src/app/styles/vendor.styl` bez `@import` do nich. Style nowego terminala dopisane do `src/app/widgets/Console/index.styl` (kolory ANSI fallback z palety solarized-ish, flex layout, `border-top` separator między output a input row).
 - **P4.3** — Google Analytics wyłączone (`trackingId: ''` w `build.config.js` + guard w `src/app/index.jsx:104`).
+- **P4.6** — tmpfs dla `/tmp` i `/home/pi/.cncjs-sessions` w `deploy/raspberry-pi/README.md`. Sesje (`session-file-store`) zapisywane na **każdy** request przy `resave: true` — przeniesienie na tmpfs (`size=16M, uid/gid=pi`) eliminuje hot path SD. `/tmp` (`size=64M`) na uploady G-code i tmp i18next. Logi już idą do journald (`SystemMaxUse=100M` rotation), nie do `/var/log/cncjs/`. Bez zmian w kodzie aplikacji — czysta konfiguracja deploymentu.
+- **P2.4** — Skip nieużywanych formatów Font Awesome przez `css-loader` `url:` filter w `webpack.config.production.js`. Modern browsers wybierają woff2 z @font-face per format() hints — eot/ttf/svg/woff nigdy nie są fetchowane. Filter zwraca `false` dla `/fontawesome-webfont\.(eot|ttf|svg|woff)([?#]|$)/` → css-loader nie emituje tych plików do dist/, ale zostawia URL-e w CSS jako literały (browser ich nie żąda bo format() je odsiewa). Spec: w @font-face przy wielu src descriptors wygrywa ostatni (cascade rule), więc pierwsza linia `src: url(...eot)` (IE9 hack) jest ignorowana przez modern browsers — nie ma nawet 404. Audyt: 60 unikalnych ikon używanych z 600+ dostępnych; woff2 75 KB pokrywa wszystkie (bo nie subsetujemy samego fonta, tylko skip nieużywanych formatów).
+- **P5.1** — Service Worker via `workbox-webpack-plugin` 6.6.1 + Express route + HTML registration. `GenerateSW` w `webpack.config.production.js` (`swDest: 'sw.js'`, `inlineWorkboxRuntime: true`, `clientsClaim: true`, `skipWaiting: true`, `maximumFileSizeToCacheInBytes: 5MB`). Precache 27 URL (wszystkie chunki webpack + woff2 + małe SVG/PNG, łącznie ~4.17 MB raw) z eksklusją `*.hbs`/`*.map`/`*.gz`/`*.br`/`bundle-report.html`. Runtime cache: i18n JSON (CacheFirst, 30 dni), hashed assets pod `/<hash>/` (CacheFirst, 1 rok), Google Fonts CSS (SWR), Google Fonts files (CacheFirst, 1 rok), navigation requests (NetworkFirst, 3s timeout, 4-entry cap). `inlineWorkboxRuntime: true` żeby SW był self-contained — bez tego SW próbuje załadować `./workbox-*.js` relative do `/sw.js` (= `/workbox-*.js`), a workbox runtime jest pod `/<hash>/workbox-*.js`. Inline SW: 24 KB raw / 7.4 KB brotli (vs 3.6+21.8 = 25.4 KB rozdzielonych — ten sam koszt instalacji, jeden request mniej). Rejestracja w `index.hbs` (script tag na końcu body, `/sw.js` z scope `/`). Express route `/sw.js` w `src/server/app.js` **przed** asset loop bo `settings.assets.app.routes` zawiera `/` — `expressStaticGzip` mountowany na `/` by inaczej shadowowal handler i serwował SW z `Cache-Control: max-age=1year, immutable` (uniemożliwiając propagację aktualizacji). Custom route ustawia `Cache-Control: no-cache, no-store, must-revalidate` (SW spec wymaga możliwości re-fetch) + `Service-Worker-Allowed: /` (jawnie). Weryfikacja: `curl -I /sw.js` zwraca 200 + poprawne headery, body 24 KB self-contained, manifest ma 27 hashed URL-e.
+- **P3.1** — Stabilizacja propsów ControlDeck + PureComponent dla 7 paneli. Audyt pokazał że ControlDeck.jsx rerenderuje przy każdym `controller:state` (10 Hz po P3.2). Wszystkie 12 paneli to były **function components** — w React 15.6 bez `React.memo` zawsze rerenderują przy parent rerenderze. Dodatkowo `getPositions()`, `getOverrides()`, `getStatusMonitors()` zwracały **nowe obiekty per render** — łamie nawet hypothetical PureComponent.
+  - **Memoize-one (już w deps, 5.0.4)** dla 3 getterów: `computePositions(controllerType, controllerState)`, `computeOverrides(controllerType, controllerSettings, controllerState)`, `computeStatusMonitors(controllerType, controllerState, workflowState)`. Stabilne referencje dopóki wejście shallow-equal. `controller:state` event zawsze tworzy nowy `controllerState` reference → tu memoize nie pomoże, ale dla **setState innych pól** (workflowState, jogStep, laserPower itp.) gettery zwracają cached obiekty.
+  - **PureComponent dla 7 paneli:** AxesPanel, JogPanel, JobStatusPanel, LaserPanel, StatusMonitors, ConnectionPanel, FilesPanel. Każdy z `const Foo = (props) => {...}` na `class Foo extends PureComponent`. Wyniesione inline arrow functions na instance methods (`handleMoveZero(axis) => () => onMove({...})`, `handleSetStep(value) => () => onSetJogStep(value)`, etc.) — `this.handleX` ma stabilną referencję per instance.
+  - **Pominięte:** TopBar (zawsze dostaje live data, PureComponent by nie pomógł), FooterStatus (rzadko zmienia się), ConsolePanel (bez propsów, własna logika), Panel (children to JSX, zawsze nowy reference per render parent), ModularDashboard (już PureComponent), LazyVisualizerPanel (już PureComponent). `getConnectionState()` zostawione bez memoize bo zwraca spread całego state — memoize tego nie warto (każda zmiana state by invalidate).
+  - **Bundle:** main brotli 49946 → 50821 (+875 B) z class boilerplate i memoize wrapper. Initial JS brotli 316 KB → 316.7 KB (+0.7 KB).
+  - **Runtime win (teoretyczny, nie mierzony):** przy 10 Hz `controller:state` na Pi browser:
+    - JogPanel: rerender z 10 Hz → tylko przy zmianie `canJog` lub `jogStep` (rzadko)
+    - LaserPanel: rerender z 10 Hz → tylko przy zmianie laserMode/power/canFrame/spindleRunning (rzadko)
+    - FilesPanel: rerender z 10 Hz → tylko przy zmianie watchFiles/activeFileName (rzadko)
+    - AxesPanel: rerender 10 Hz (positions zmienia się) — bez zmian, ale **memoize positions** powoduje że gdy controllerState się zmienia ale machinePos nie (rare) → AxesPanel skipuje
+    - StatusMonitors: rerender 10 Hz → tylko przy zmianie monitors output (rare, bo pinState/coolant rzadko się zmienia)
+    - JobStatusPanel: rerender przy zmianie senderStatus (sender:status event, też 10 Hz) — bez znaczącej zmiany
+    - ConnectionPanel: rerender 10 Hz (nie zmieniony — state spread)
+  - **Konkretnie na Pi Zero W:** 4-5 paneli zamiast 10 Hz → 0-1 Hz rerender, każdy panel oszczędza ~1-3 ms reconciliation. Przy 10 Hz to ~30-80 ms/s oszczędność CPU browser. Na Pi browser przy `controller:state` to różnica między płynnym UI a okazjonalnym frame drop.
+- **P1.4 Phase 2** — Bump `three` ~0.103.0 → ~0.124.0 + cherry-pick imports w 13 plikach + lokalne forki w `src/app/lib/three/`. Zmiany API:
+  - `CombinedCamera.js`: `THREE.Math.RAD2DEG` → `MathUtils.RAD2DEG` (przemianowane w r113)
+  - `STLLoader.js`: `geometry.addAttribute()` → `geometry.setAttribute()` (przemianowane w r123)
+  - `GCodeVisualizer.js`, `GridLine.js`, `ProbeVisualization.js`: `vertexColors: THREE.VertexColors` → `vertexColors: true` (enum deprecated w r119, removed w r125; bool to docelowe API)
+  - Pozostałe pliki: tylko zamiana `import * as THREE from 'three'` na named imports (`import { Mesh, Scene, ... } from 'three'`) + strip prefiksu `THREE.` z body
+  - Lokalne forki w `lib/three/` (CombinedCamera, STLLoader, TrackballControls, WebGL) zostają — `CombinedCamera` był i jest usunięty z core, `STLLoader`/`TrackballControls` przeniesione do `examples/jsm/` w r122 (nasz fork jest niezależny).
+  - **Bundle: zero zysku w KB.** vendor.three brotli: 105 KB → 105 KB. Three 0.124 to single-file ESM bundle (`build/three.module.js`) bez `"sideEffects": false` w package.json (flaga dodana dopiero w r149). Webpack tree-shake nie potrafi wyciąć martwego kodu z bundlu z internal cross-references. Próba `sideEffects: false` overridu w module.rules → bundle hash identyczny (no-op).
+  - **Co realnie dał Phase 2:**
+    1. CLAUDE.md compliance (sekcja 0: "Nigdy `import * as THREE from 'three'`")
+    2. 2 lata bugfixów Three.js (2019 → 2021)
+    3. Aligned deprecated API (`MathUtils`, `setAttribute`, `vertexColors: true`) — kod gotowy pod bump w przyszłości
+    4. Codebase używa named imports — przygotowanie pod ewentualne Phase 3 (bump >=0.149 wymaga refactoru `Geometry`→`BufferGeometry` w 4 plikach i `Face3`→indexed BufferGeometry w `ProbeVisualization.js`)
+  - **Trade-off Phase 3 (NIE robione, do decyzji):** real win ~30-50 KB brotli z async vendor.three, ale 3-5h pracy + manual test visualizera + Geometry/Face3 refactor (rdzenny rendering toolpath i probe surface). Wysokie ryzyko regresji — visualizer to kluczowy user-facing feature.
 - **P5.2** — `immutable: true` w `serveStatic` opcjach (`src/server/app.js`).
 - **P6.1** — `webpack-bundle-analyzer` pod flagą `ANALYZE=1 yarn build` → raport `dist/cncjs/bundle-report.html`. Dodane devDep: `webpack-bundle-analyzer`.
 - **Cleanup:** `serve-static` usunięty z obu `package.json` (zastąpiony przez `express-static-gzip`).
@@ -101,6 +131,40 @@ Po P2.5 (xterm → DOM terminal):
 - Funkcjonalność zachowana: line editing, history (ArrowUp/Down), multi-line paste, Ctrl+letter → raw control char (Ctrl+X reset Grbl działa), kolory chalk (port `yellowBright`, baudrate `blueBright`, source `gray`, header `white bold`) przez minimalny ANSI SGR parser → CSS classes. Auto-scroll z follow-bottom detection (scroll-up zachowuje pozycję czytelnika).
 - Trade-off: utracone funkcje xterm: alt-screen mode, escape sequences inne niż SGR (cursor movement, screen clears wysyłane przez serwer) — żadne nie używane przez Grbl/Marlin/Smoothie/TinyG output. Selection model: native browser zamiast xterm — w praktyce wygodniejsze (kontekstowe menu, kopiowanie z natywnymi keyboard shortcuts).
 
+Po P2.4 (Font Awesome — skip nieużywanych formatów):
+- `dist/cncjs/app/` total: **7.5 MB → 6.4 MB (−1.1 MB / −15%)**
+- Pliki usunięte z dist/: `fontawesome-webfont.{svg,ttf,eot,woff}` = 444+165+165+98 = **872 KB raw**. Reszta delty (~250 KB) z deterministycznych chunków po rebuild (hashe assetów się przesunęły, część bytów inaczej alokowana między emitowanymi plikami).
+- `fontawesome-webfont.woff2` (75 KB) pozostaje — to jedyny format jaki modern browsers naprawdę pobierają.
+- **Initial JS brotli: 316 KB (bez zmian)** — fonty nigdy nie były w initial bundle, są emitowane jako osobne assety i fetchowane tylko gdy CSS @font-face je potrzebuje.
+- **Initial CSS brotli: 42 KB (bez zmian)** — `vendor.misc.css` ma teraz @font-face z `src:` zawierającym 4 nieresolowane URL-e (`url(../fonts/fontawesome-webfont.eot?v=4.7.0)` itd.) plus jeden resolved woff2 (`url(/<hash>/...woff2)`). Browser parsuje `format()` hints, wybiera tylko woff2.
+- Weryfikacja: `grep fontawesome-webfont dist/cncjs/app/*.css` pokazuje 4 nieresolowane URL-e dla eot/ttf/svg/woff i `.fa-home:before { content: "\f015" }` dla wszystkich 60 użytych klas ikon (icon classes są w CSS, nie wymagają osobnych assetów — tylko unicode mapping na glyph w woff2).
+- Trade-off: stare przeglądarki (IE 11, Safari <11, Chrome <36) które nie wspierają woff2 dostaną broken icons (URL-e do woff/ttf/eot/svg są w CSS ale pliki nie istnieją w dist/, więc 404). Nie obsługujemy ich w cncjs/Pi setupie.
+
+Po P3.1 (PureComponent + memoize-one dla ControlDeck):
+- `main.bundle.js` brotli: 49946 → **50821 (+875 B)** — koszt class boilerplate i memoize wrapper functions.
+- Initial JS brotli total: 316 → **316.7 KB** (+0.7 KB).
+- Inne chunki bez zmian.
+- **To runtime win, nie bundle win.** Pomiar bez React DevTools Profiler na real Pi-target nie możliwy z command line.
+- Realne efekty (zob. wpis P3.1 wyżej): 4-5 z 7 konwertowanych paneli rerenderuje znacznie rzadziej niż 10 Hz po zmianie. Memoize-one dla `getPositions`/`getOverrides`/`getStatusMonitors` daje stabilne referencje gdy `controllerState` ten sam (np. setState innego pola).
+
+Po P1.4 Phase 2 (cherry-pick Three.js + bump 0.103 → 0.124):
+- `vendor.three.bundle.js`: raw 518 KB → 516 KB (−2 KB, deterministyczna delta z innego hashowania), **brotli 105 KB → 105 KB (bez zmian)**.
+- `visualizer.bundle.js`: brotli 45 KB → 45 KB (bez zmian).
+- Initial JS brotli: 316 KB (bez zmian) — three jest w async chunk.
+- `dist/cncjs/app/` total: bez zmiany istotnej.
+- **Wniosek:** Phase 2 to higiena + przygotowanie. Realny KB win wymaga Phase 3 (>=0.149 z sideEffects: false + Geometry/Face3 refactor) — NIE wykonane, decyzja na osobny slot.
+
+Po P5.1 (Service Worker):
+- `dist/cncjs/app/sw.js`: **24 KB raw / 7.4 KB brotli** (self-contained, workbox 6.6.1 inlined)
+- Initial bundle (JS + CSS) bez zmian — SW jest dodatkowym plikiem rejestrowanym po `load`, nie wpływa na render path pierwszego loadu.
+- **Pierwszy load:** bez zmian (SW jeszcze nie zainstalowany), browser fetcha jak zwykle (~358 KB brotli initial). Po `load` event SW się rejestruje i precache'uje 27 plików (~4.17 MB raw) w tle. Klient odczuwa to jako "zwykły load + delikatne tło sieci po pierwszym ekranie".
+- **Drugi load (cache hit):** SW przejmuje navigation request → CacheFirst dla `/<hash>/*` assets, NetworkFirst (3s timeout) dla HTML. Wszystkie chunki JS/CSS/woff2 serwowane z Cache Storage bez round-tripu. Spodziewany **TTI <100 ms** na drugim loadzie (vs ~1-2s pierwszy load na Pi WiFi). Pi server nie dostaje żadnych requestów na chunki, tylko na HTML (a i ten ma 3s fallback z cache).
+- **Offline / Pi unreachable:** navigation request fail po 3s, SW serwuje cached HTML shell. Aplikacja ładuje się, ale Socket.IO nie zestawi połączenia (zostanie wyświetlony modal "ServerDisconnected" z `containers/Workspace/modals/ServerDisconnected.jsx`). Dla warsztatu z chwilowymi przerwami WiFi to dramatycznie lepszy UX niż "ERR_CONNECTION_REFUSED" białego ekranu.
+- **i18n:** runtime cache `CacheFirst` z `maxAgeSeconds: 30*24*3600` dla `/i18n/{lng}/{ns}.json`. Każdy język ładowany on-demand, cached na 30 dni. Po pierwszym loadzie języka — wszystkie strings idą z cache.
+- **Aktualizacje:** `skipWaiting: true` + `clientsClaim: true` → nowy SW przejmuje aktywne klienty natychmiast po install. `Cache-Control: no-cache` na `/sw.js` gwarantuje że browser re-fetcha SW przy każdej wizycie i wykryje zmianę (workbox revisions assets po hashach contenthash, więc tylko zmienione pliki re-cachowane).
+- **Trade-off:** dodatkowy devDep `workbox-webpack-plugin@^6.6.1` (Node >=16, webpack 5 compat). Build dłuższy o ~500ms (workbox precache manifest generation). `dist/` +24 KB (jeden plik sw.js).
+- **Co NIE jest cachowane:** `/api/*`, `/socket.io/*` (workbox runtime patterns nie matchują — fallthrough do network), więc realtime status maszyny zawsze świeży.
+
 ### ⏭️ Do zrobienia w kolejności (rekomendacja dla Pi Zero W)
 
 Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i parsowanie w przeglądarce (front), potem runtime Node.
@@ -111,13 +175,13 @@ Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i pa
 4. ~~**P4.1 + P4.2** — Pi-side systemd unit + `NODE_OPTIONS=--max-old-space-size=256`.~~ **Zrobione 2026-05-26** — `deploy/raspberry-pi/{cncjs.service,README.md}`.
 5. ~~**P3.2 + P3.4** — Throttle eventów Socket.IO (10 Hz) + batchowanie xterm writes.~~ **Zrobione 2026-05-26** — `Controller.js` throttle + `widgets/Console/{index.jsx,Terminal.jsx}` batch. Bufor konsoli już był capped przez xterm `scrollback: 1000` — plan miał błędne założenie; przerzucone na realny problem (N→1 parser calls per okno).
 6. ~~**P2.5** — Wyrzucenie xterm.~~ **Zrobione 2026-05-26** — DOM terminal w `widgets/Console/Terminal.jsx`, public API zachowany, kolory chalk parsowane przez SGR → CSS. `vendor.misc` −136 KB raw / −26 KB brotli. Initial JS brotli 342 → 316 KB.
-7. **P5.1** — Service Worker (workbox). Drugi load <100 ms, offline mode.
-8. **P4.6** — tmpfs dla `/var/log/cncjs/` i `/tmp` (oszczędność cykli zapisu microSD).
-9. **P2.4** — Font Awesome subset / migracja na `react-icons`. −~1.5 MB z `dist/` (assety).
-10. **P1.4** — Selektywne importy Three.js + bump `three` ~0.103 → >=0.150. Średnie ryzyko (forki w `src/app/lib/three/`, `CombinedCamera` do przepisania).
+7. ~~**P4.6** — tmpfs dla `/tmp` i `/home/pi/.cncjs-sessions`.~~ **Zrobione 2026-05-26** — `deploy/raspberry-pi/README.md` rozbudowane. Logi już idą do journald, nie do `/var/log/cncjs/`.
+8. ~~**P2.4** — Font Awesome subset.~~ **Zrobione 2026-05-26** (alternatywą do subsettingu: skip nieużywanych formatów przez `css-loader` `url:` filter). dist/ −1.1 MB. Initial bundle bez zmian.
+9. ~~**P5.1** — Service Worker (workbox).~~ **Zrobione 2026-05-26** — `GenerateSW` w webpack + Express `/sw.js` route + rejestracja w `index.hbs`. Drugi load <100 ms, offline shell.
+10. ~~**P1.4 Phase 2** — Selektywne importy Three.js + bump `three` ~0.103 → ~0.124.~~ **Zrobione 2026-05-27** jako higiena. 0 KB redukcji bundle (three 0.124 to single-file ESM bez sideEffects flag). Cherry-pick imports + aligned deprecated API (MathUtils, setAttribute, vertexColors: true) przygotowuje codebase pod ewentualny **Phase 3** (bump >=0.149, refactor Geometry→BufferGeometry w CoordinateAxes/GCodeVisualizer/GridLine/ProbeVisualization, Face3→indexed geom — 3-5h + manual test visualizera, real win ~30-50 KB brotli).
 11. **P4.5** — Kasacja nieużywanych endpointów serwera (auth/users/events jeśli single-user warsztat). Dla Pi Zero W warta rozważenia.
 12. **P2.6** — Audyt nakładających się stacków UI (bootstrap/react-bootstrap/styled-components/@trendmicro). Duży projekt.
-13. **P3.1 / P3.3** — PureComponent audit, virtualizacja list (jeśli FilesPanel rośnie).
+13. ~~**P3.1** — PureComponent audit + stabilizacja propsów ControlDeck.~~ **Zrobione 2026-05-27** — memoize-one dla 3 getterów + PureComponent dla 7 paneli. Bundle +0.7 KB, runtime win na Pi browser (4-5 paneli rerenderuje rzadko zamiast 10 Hz). **P3.3** (virtualizacja list) — **odpada**: FilesPanel slice'uje do max 6 plików, brak listy która rośnie.
 14. **P4.4** — HTTP/2 (jeśli front przez nginx).
 
 ### ✅ Decyzje (2026-05-26)

@@ -3,6 +3,7 @@ import map from 'lodash/map';
 import reverse from 'lodash/reverse';
 import sortBy from 'lodash/sortBy';
 import uniq from 'lodash/uniq';
+import memoize from 'memoize-one';
 import pubsub from 'pubsub-js';
 import React, { PureComponent } from 'react';
 import api from 'app/api';
@@ -647,9 +648,10 @@ class ControlDeck extends PureComponent {
     controller.command('gcode', wcs);
   };
 
-  getPositions() {
-    const { controllerType, controllerState } = this.state;
-
+  // memoize-one: returns stable reference when (controllerType, controllerState)
+  // shallow-equal previous call. Hot path — fires per 10 Hz controller:state event,
+  // and PureComponent panels downstream (AxesPanel, TopBar) compare prop identity.
+  computePositions = memoize((controllerType, controllerState) => {
     if (controllerType === 'TinyG') {
       return {
         machine: get(controllerState, 'sr.mpos', {}),
@@ -669,6 +671,10 @@ class ControlDeck extends PureComponent {
       machine: get(controllerState, 'status.mpos', {}),
       work: get(controllerState, 'status.wpos', {})
     };
+  });
+
+  getPositions() {
+    return this.computePositions(this.state.controllerType, this.state.controllerState);
   }
 
   getMachineStatus() {
@@ -752,9 +758,7 @@ class ControlDeck extends PureComponent {
       0;
   }
 
-  getOverrides() {
-    const { controllerType, controllerSettings, controllerState } = this.state;
-
+  computeOverrides = memoize((controllerType, controllerSettings, controllerState) => {
     if (controllerType === 'TinyG') {
       return {
         feed: Math.round((Number(get(controllerSettings, 'mfo', 1)) || 1) * 100),
@@ -782,6 +786,11 @@ class ControlDeck extends PureComponent {
       rapid: get(controllerState, 'status.ov[1]', 100),
       spindle: get(controllerState, 'status.ov[2]', 100)
     };
+  });
+
+  getOverrides() {
+    const { controllerType, controllerSettings, controllerState } = this.state;
+    return this.computeOverrides(controllerType, controllerSettings, controllerState);
   }
 
   isAirAssistOn() {
@@ -792,13 +801,19 @@ class ControlDeck extends PureComponent {
       String(coolant).indexOf('M8') >= 0;
   }
 
-  getStatusMonitors() {
-    const { controllerState } = this.state;
+  computeStatusMonitors = memoize((controllerType, controllerState, workflowState) => {
     const pinState = get(controllerState, 'status.pinState', '');
-    const activeState = this.getMachineStatus();
+    const activeState = get(controllerState, 'status.activeState') ||
+      get(controllerState, 'sr.machineState') ||
+      workflowState ||
+      'idle';
     const limitPins = ['X', 'Y', 'Z', 'A'].filter(pin => String(pinState).indexOf(pin) >= 0);
     const doorOpen = String(pinState).indexOf('D') >= 0 || activeState === 'Door';
-    const coolant = this.getModalCoolant();
+    const coolant = (controllerType === 'TinyG') ? get(controllerState, 'sr.modal.coolant', '') :
+      (controllerType === 'Marlin') ? get(controllerState, 'modal.coolant', '') :
+        get(controllerState, 'parserstate.modal.coolant', '');
+    const accessoryState = get(controllerState, 'status.accessoryState', '');
+    const airAssistOn = String(accessoryState).indexOf('F') >= 0 || String(coolant).indexOf('M8') >= 0;
     const temperature = get(controllerState, 'status.currentTemperature') ||
       get(controllerState, 'extruder.deg') ||
       get(controllerState, 'heatedBed.deg');
@@ -807,10 +822,14 @@ class ControlDeck extends PureComponent {
       limits: limitPins.length ? limitPins.join(' ') : i18n._('Clear'),
       door: doorOpen ? i18n._('Open') : i18n._('Closed'),
       waterFlow: i18n._('Unknown'),
-      airAssist: this.isAirAssistOn() ? i18n._('On') : i18n._('Off'),
+      airAssist: airAssistOn ? i18n._('On') : i18n._('Off'),
       exhaust: String(coolant).indexOf('M7') >= 0 ? i18n._('On') : i18n._('Unknown'),
       laserTemp: temperature ? (temperature + ' C') : i18n._('Unknown')
     };
+  });
+
+  getStatusMonitors() {
+    return this.computeStatusMonitors(this.state.controllerType, this.state.controllerState, this.state.workflowState);
   }
 
   canSendCommand() {
