@@ -18,5 +18,12 @@
     <div style="background: transparent url('{{webroot}}images/32x32/loading.gif') no-repeat 0 0; height: 32px; width: 32px; display: block; margin: 0 auto;"></div>
     <div style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: normal; color: #222; text-align: center; margin-top: 10px;">{{loading}}</div>
 </div>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function (e) { console.error('SW register failed:', e); });
+  });
+}
+</script>
 </body>
 </html>

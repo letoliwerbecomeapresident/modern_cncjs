@@ -10,6 +10,7 @@ const without = require('lodash/without');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
+const { GenerateSW } = require('workbox-webpack-plugin');
 const babelConfig = require('./babel.config');
 const buildConfig = require('./build.config');
 const pkg = require('./src/package.json');
@@ -238,6 +239,67 @@ module.exports = {
       },
       threshold: 1024,
       minRatio: 0.8,
+    }),
+    new GenerateSW({
+      swDest: 'sw.js',
+      clientsClaim: true,
+      skipWaiting: true,
+      inlineWorkboxRuntime: true,
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      exclude: [
+        /\.hbs$/,
+        /\.map$/,
+        /\.LICENSE\.txt$/,
+        /\.gz$/,
+        /\.br$/,
+        /bundle-report\.html$/,
+      ],
+      runtimeCaching: [
+        {
+          urlPattern: /\/i18n\/[a-z-]+\/[a-z]+\.json$/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'cncjs-i18n',
+            expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+        {
+          urlPattern: /\/[a-f0-9]{8}\/.+\.(?:js|css|woff2|svg|png|jpg|gif|ico)$/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'cncjs-assets',
+            expiration: { maxEntries: 100, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+        {
+          urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'google-fonts-css',
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+        {
+          urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'google-fonts-files',
+            expiration: { maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+        {
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'cncjs-shell',
+            networkTimeoutSeconds: 3,
+            expiration: { maxEntries: 4 },
+          },
+        },
+      ],
     }),
     ...(process.env.ANALYZE ? [
       new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)({

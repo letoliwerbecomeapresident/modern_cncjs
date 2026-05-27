@@ -181,6 +181,25 @@ const appMain = () => {
   }
   app.use(compress(settings.middleware.compression));
 
+  { // Service Worker — must precede expressStaticGzip(asset.path, ...) below,
+    // because settings.assets.app.routes includes '/' which would shadow this
+    // handler and serve sw.js with Cache-Control: immutable max-age=1y,
+    // preventing the SW from ever updating.
+    const appAssetPath = _get(settings, 'assets.app.path', '');
+    if (appAssetPath) {
+      app.get(urljoin(settings.route || '/', 'sw.js'), (req, res) => {
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Service-Worker-Allowed', '/');
+        res.type('application/javascript');
+        res.sendFile(path.join(appAssetPath, 'sw.js'), (err) => {
+          if (err && !res.headersSent) {
+            res.status(404).end();
+          }
+        });
+      });
+    }
+  }
+
   Object.keys(settings.assets).forEach((name) => {
     const asset = settings.assets[name];
 
