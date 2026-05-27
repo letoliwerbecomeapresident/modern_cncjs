@@ -7,7 +7,6 @@ import PropTypes from 'prop-types';
 import pubsub from 'pubsub-js';
 import React, { PureComponent } from 'react';
 import Repeatable from 'react-repeatable';
-import styled from 'styled-components';
 import { Button, ButtonToolbar, ButtonGroup } from 'app/components/Buttons';
 import Dropdown, { MenuItem } from 'app/components/Dropdown';
 import { FlexContainer, Row, Col } from 'app/components/GridSystem';
@@ -31,61 +30,16 @@ import {
   CAMERA_MODE_PAN,
   CAMERA_MODE_ROTATE
 } from './constants';
+import styles from './secondary-toolbar.styl';
 
 // Sentinel eventKey for the "None" item in the machine-profile dropdown.
 const CLEAR_MACHINE_PROFILE = '__clear__';
 
-const IconButton = styled(Button)`
-    display: inline-block;
-    padding: 8px;
-    margin-bottom: 0;
-    font-weight: normal;
-    text-align: center;
-    white-space: nowrap;
-    touch-action: manipulation;
-    cursor: pointer;
-    user-select: none;
-    background-image: none;
-    background-color: inherit;
-
-    && {
-        border: 0;
-        border-radius: 0;
-    }
-
-    filter: invert(40%);
-
-    &.highlight,
-    &:hover.highlight {
-        background-image: none;
-        background-color: rgba(255, 255, 255, .7);
-        outline: 0;
-        color: #333;
-        text-decoration: none;
-        filter: invert(100%);
-    }
-
-    &:hover {
-        background-image: none;
-        background-color: #e6e6e6;
-        filter: invert(0%);
-    }
-
-    &:hover,
-    &:focus,
-    &:active {
-        outline: 0;
-        color: #333;
-        text-decoration: none;
-    }
-
-    min-width: 36px; // 8px + 20px + 8px
-    height: 36px; // 8px + 20px + 8px
-
-    & + & {
-        margin-left: 0;
-    }
-`;
+const IconButton = ({ className, children, ...rest }) => (
+  <Button className={cx(styles.iconButton, className)} {...rest}>
+    {children}
+  </Button>
+);
 
 class SecondaryToolbar extends PureComponent {
     static propTypes = {
@@ -199,7 +153,7 @@ class SecondaryToolbar extends PureComponent {
                     <IconButton
                       aria-label="Top view"
                       className={cx({
-                        'highlight': cameraPosition === 'top'
+                        [styles.highlight]: cameraPosition === 'top'
                       })}
                       onClick={camera.toTopView}
                     >
@@ -219,7 +173,7 @@ class SecondaryToolbar extends PureComponent {
                     <IconButton
                       aria-label="Front view"
                       className={cx({
-                        'highlight': cameraPosition === 'front'
+                        [styles.highlight]: cameraPosition === 'front'
                       })}
                       onClick={camera.toFrontView}
                     >
@@ -237,7 +191,7 @@ class SecondaryToolbar extends PureComponent {
                     <IconButton
                       aria-label="Right side view"
                       className={cx({
-                        'highlight': cameraPosition === 'right'
+                        [styles.highlight]: cameraPosition === 'right'
                       })}
                       onClick={camera.toRightSideView}
                     >
@@ -255,7 +209,7 @@ class SecondaryToolbar extends PureComponent {
                     <IconButton
                       aria-label="Left side view"
                       className={cx({
-                        'highlight': cameraPosition === 'left'
+                        [styles.highlight]: cameraPosition === 'left'
                       })}
                       onClick={camera.toLeftSideView}
                     >
@@ -273,7 +227,7 @@ class SecondaryToolbar extends PureComponent {
                     <IconButton
                       aria-label="3D view"
                       className={cx({
-                        'highlight': cameraPosition === '3d'
+                        [styles.highlight]: cameraPosition === '3d'
                       })}
                       onClick={camera.to3DView}
                     >

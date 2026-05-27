@@ -1,7 +1,11 @@
-import styled from 'styled-components';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './SectionGroup.styl';
 
-const SectionGroup = styled.div`
-    margin-bottom: 24px;
-`;
+const SectionGroup = ({ className, children, ...rest }) => (
+  <div className={classNames(styles.sectionGroup, className)} {...rest}>
+    {children}
+  </div>
+);
 
 export default SectionGroup;

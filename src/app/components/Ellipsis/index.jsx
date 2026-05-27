@@ -1,18 +1,30 @@
-import styled from 'styled-components';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './Ellipsis.styl';
 
-const Ellipsis = styled.div`
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-`;
+const Ellipsis = ({ className, children, ...rest }) => (
+  <div className={classNames(styles.ellipsis, className)} {...rest}>
+    {children}
+  </div>
+);
 
-const EllipsisBlock = styled(Ellipsis)`
-    display: block;
-`;
+const EllipsisBlock = ({ className, children, ...rest }) => (
+  <div
+    className={classNames(styles.ellipsis, styles.ellipsisBlock, className)}
+    {...rest}
+  >
+    {children}
+  </div>
+);
 
-const EllipsisInlineBlock = styled(Ellipsis)`
-    display: inline-block;
-`;
+const EllipsisInlineBlock = ({ className, children, ...rest }) => (
+  <div
+    className={classNames(styles.ellipsis, styles.ellipsisInlineBlock, className)}
+    {...rest}
+  >
+    {children}
+  </div>
+);
 
 export {
   EllipsisBlock,

@@ -1,0 +1,51 @@
+.icon-button {
+    display: inline-block;
+    padding: 8px;
+    margin-bottom: 0;
+    font-weight: normal;
+    text-align: center;
+    white-space: nowrap;
+    touch-action: manipulation;
+    cursor: pointer;
+    user-select: none;
+    background-image: none;
+    background-color: inherit;
+
+    && {
+        border: 0;
+        border-radius: 0;
+    }
+
+    filter: invert(40%);
+
+    &.highlight,
+    &:hover.highlight {
+        background-image: none;
+        background-color: rgba(255, 255, 255, .7);
+        outline: 0;
+        color: #333;
+        text-decoration: none;
+        filter: invert(100%);
+    }
+
+    &:hover {
+        background-image: none;
+        background-color: #e6e6e6;
+        filter: invert(0%);
+    }
+
+    &:hover,
+    &:focus,
+    &:active {
+        outline: 0;
+        color: #333;
+        text-decoration: none;
+    }
+
+    min-width: 36px;
+    height: 36px;
+
+    & + & {
+        margin-left: 0;
+    }
+}

@@ -1,23 +1,33 @@
-import styled from 'styled-components';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './TabularForm.styl';
 
-const TabularForm = styled.div`
-    display: table;
-`;
+const TabularForm = ({ className, children, ...rest }) => (
+  <div className={classNames(styles.tabularForm, className)} {...rest}>
+    {children}
+  </div>
+);
 
-TabularForm.Row = styled.div`
-    display: table-row;
-`;
+TabularForm.Row = ({ className, children, ...rest }) => (
+  <div className={classNames(styles.row, className)} {...rest}>
+    {children}
+  </div>
+);
 
-TabularForm.Col = styled.div`
-    display: table-cell;
-
-    ${props => props.condensed && `
-        width: 0.1%;
-    `}
-
-    ${props => props.nowrap && `
-        white-space: nowrap;
-    `}
-`;
+TabularForm.Col = ({ className, condensed, nowrap, children, ...rest }) => (
+  <div
+    className={classNames(
+      styles.col,
+      {
+        [styles.condensed]: condensed,
+        [styles.nowrap]: nowrap,
+      },
+      className,
+    )}
+    {...rest}
+  >
+    {children}
+  </div>
+);
 
 export default TabularForm;

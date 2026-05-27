@@ -1,10 +1,11 @@
-import styled from 'styled-components';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './SectionTitle.styl';
 
-const SectionTitle = styled.div`
-    margin-bottom: 16px;
-    padding-bottom: 4px;
-    font-weight: bold;
-    border-bottom: 1px solid rgb(230, 230, 230);
-`;
+const SectionTitle = ({ className, children, ...rest }) => (
+  <div className={classNames(styles.sectionTitle, className)} {...rest}>
+    {children}
+  </div>
+);
 
 export default SectionTitle;

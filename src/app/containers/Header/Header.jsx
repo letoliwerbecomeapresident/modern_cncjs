@@ -3,7 +3,6 @@ import React, { PureComponent } from 'react';
 import { Navbar } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
 import semver from 'semver';
-import styled from 'styled-components';
 import get from 'lodash/get';
 import without from 'lodash/without';
 import Push from 'push.js';
@@ -34,14 +33,6 @@ const newUpdateAvailableTooltip = () => {
     </div>
   );
 };
-
-const MenuItemLink = styled(Anchor)`
-  color: inherit;
-  &:hover, &:focus {
-    color: inherit;
-    text-decoration: none;
-  }
-`;
 
 class Header extends PureComponent {
   static propTypes = {
@@ -504,20 +495,22 @@ class Header extends PureComponent {
                   {showCommands &&
                     <MenuItem divider />}
                   <MenuItem>
-                    <MenuItemLink
+                    <Anchor
+                      className={styles.menuItemLink}
                       href="https://github.com/cncjs/cncjs/wiki"
                       target="_blank"
                     >
                       {i18n._('Help')}
-                    </MenuItemLink>
+                    </Anchor>
                   </MenuItem>
                   <MenuItem>
-                    <MenuItemLink
+                    <Anchor
+                      className={styles.menuItemLink}
                       href="https://github.com/cncjs/cncjs/issues"
                       target="_blank"
                     >
                       {i18n._('Report an issue')}
-                    </MenuItemLink>
+                    </Anchor>
                   </MenuItem>
                 </Dropdown.Menu>
               </Dropdown>

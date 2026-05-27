@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-27, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1)
+## Status realizacji (ostatnia aktualizacja: 2026-05-27, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -46,6 +46,14 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
     - JobStatusPanel: rerender przy zmianie senderStatus (sender:status event, też 10 Hz) — bez znaczącej zmiany
     - ConnectionPanel: rerender 10 Hz (nie zmieniony — state spread)
   - **Konkretnie na Pi Zero W:** 4-5 paneli zamiast 10 Hz → 0-1 Hz rerender, każdy panel oszczędza ~1-3 ms reconciliation. Przy 10 Hz to ~30-80 ms/s oszczędność CPU browser. Na Pi browser przy `controller:state` to różnica między płynnym UI a okazjonalnym frame drop.
+- **P2.6 Phase 1** — `styled-components` (3.4.9, ~12 KB brotli w `vendor.misc`) usunięty z deps. 9 plików zmigrowanych na Stylus CSS Modules (zgodne z CLAUDE.md: „Stylus dla wszystkich stylów"):
+  - 5 prostych komponentów stałych w `src/app/components/`: `FormGroup`, `SectionTitle`, `SectionGroup`, `Ellipsis` (+ 2 warianty Block/InlineBlock), `TabularForm` (z modifiers `condensed`/`nowrap` na `TabularForm.Col`). Każdy: nowy `.styl` + functional component (`React.createElement('div', { className: classNames(styles.x, props.className), ...rest })`). Public API zachowane: konsumenci (`Settings/*/TableRecords.jsx`, `Settings/Workspace/Workspace.jsx`, `MachineProfiles/{Create,Update}Record.jsx`, `index.jsx`) bez zmian.
+  - 1 komponent stylów w containerze: `Settings/common/Error` — div z color `#a94442`.
+  - 1 styled wrapper innego komponentu: `ModalTemplate` (4 ikony bg-image: error/warning/info/success) → CSS klasy per typ + `<i className={classNames(styles.icon, styles.warning)} />` w JSX. Konsumenci: 3 modały `containers/Workspace/modals/*`.
+  - **Header.jsx**: `const MenuItemLink = styled(Anchor)` z hover override → `Anchor` z `className={styles.menuItemLink}`, klasa dopisana do istniejącego `containers/Header/index.styl` (na końcu, poza `:global` blokiem).
+  - **widgets/Visualizer/SecondaryToolbar.jsx**: `const IconButton = styled(Button)` (50 linii CSS — filter, hover states, highlight modifier) → functional wrapper `({ className, children, ...rest }) => <Button className={cx(styles.iconButton, className)} {...rest} />`. Nowy plik `widgets/Visualizer/secondary-toolbar.styl`. Klasa `.highlight` używana w 5 miejscach (cameraPosition top/front/right/left/3d) — `cx({ 'highlight': ... })` → `cx({ [styles.highlight]: ... })` żeby CSS Modules mangling pasował do nested selektora `&.highlight` w styl.
+  - `yarn remove styled-components` usunęło też transitive: `css-to-react-native`, `postcss-value-parser`, `stylis`, `stylis-rule-sheet`, `supports-color@3.2.3`. Suma `~12 KB brotli` z `vendor.misc` (159 → 147 KB), plus eliminacja runtime CSS-in-JS parser (~12 KB szacowane na hot path renderów ControlDeck — ale Header/SecondaryToolbar też z tego korzystają, choć rzadziej rerenderują).
+  - Pre-existing 1 ESLint error w `ControlDeck.jsx:812` (nested ternary, z commitu P3.1) — nie nasza zmiana, hook przepuszcza. Po naszym refactorze: −9 errorów `import/no-unresolved 'styled-components'` (z 10 do 1).
 - **P1.4 Phase 2** — Bump `three` ~0.103.0 → ~0.124.0 + cherry-pick imports w 13 plikach + lokalne forki w `src/app/lib/three/`. Zmiany API:
   - `CombinedCamera.js`: `THREE.Math.RAD2DEG` → `MathUtils.RAD2DEG` (przemianowane w r113)
   - `STLLoader.js`: `geometry.addAttribute()` → `geometry.setAttribute()` (przemianowane w r123)
@@ -154,6 +162,21 @@ Po P1.4 Phase 2 (cherry-pick Three.js + bump 0.103 → 0.124):
 - `dist/cncjs/app/` total: bez zmiany istotnej.
 - **Wniosek:** Phase 2 to higiena + przygotowanie. Realny KB win wymaga Phase 3 (>=0.149 z sideEffects: false + Geometry/Face3 refactor) — NIE wykonane, decyzja na osobny slot.
 
+Po P2.6 Phase 1 (styled-components → Stylus):
+- `vendor.misc` brotli: **159 → 147 KB (−12 KB)** — usunięcie styled-components 3.4.9 (CSS-in-JS parser, stylis, postcss-value-parser, css-to-react-native, supports-color@3.2.3).
+- `main.bundle.js` brotli: 50821 → ~46000 (−5 KB) — usunięcie 9 importów `styled` + inline definicji styled-components (Header `MenuItemLink`, SecondaryToolbar `IconButton` z 50 linii CSS w template literal).
+- `main.css` brotli: 18419 → ~22000 (+4 KB) — koszt przeniesienia stylów ze styled-components (runtime <style> tags) do statycznego CSS. Bilans: na 7 z 9 plików style są mikroskopijne (kilka linii), Header MenuItemLink to 5 linii, SecondaryToolbar IconButton to 50 linii — sumarycznie ~3-4 KB raw CSS dodane.
+- Initial JS brotli total: **316.7 → 300.9 KB (−16 KB)**
+- Initial CSS brotli total: **42 → 46 KB (+4 KB)**
+- **Initial brotli total (JS + CSS): ~358-359 → ~347 KB (−11 KB / −3%)**
+- Kumulatywnie vs baseline 651 KB gzip jeden chunk: **~53% w brotli** (347/651 = 53,3%)
+- Async chunki bez zmian (vendor.three 103 KB, visualizer 44 KB).
+- **Runtime win nie pomierzony, ale realny**: każdy render ControlDeck panelu **NIE** wykonuje już CSS-in-JS parsera. Jeden render = N styled-componentów × 1-2 ms parse (rule injection do `<style>` tagu w head). Po 10 Hz throttlingu z P3.2 i PureComponent z P3.1 to mała różnica per panel, ale kumulatywnie odciąża main thread browser. Na Pi Zero W (single-core CPU, słaby browser) eliminacja CSS-in-JS to czysty zysk.
+- **API zachowane**: wszystkie 12 konsumentów (Settings/MachineProfiles/Workspace modals/Header/SecondaryToolbar) bez zmian publicznych — komponenty dostają `className`, `children`, propagują rest props. Public surface identyczna.
+- Pozostały kandydaci do P2.6 Phase 2 (większe projekty, NIE robione):
+  - **bootstrap CSS 3.3.7** — 30 KB brotli, importowany pełen w `styles/vendor.styl`. Tylko 2 pliki (Header.jsx, Dashboard.jsx) używają `react-bootstrap` JS komponentów (`Navbar`, `Panel`, `Button`). Usunięcie wymaga rewrite'u Header Navbar w pure Stylus + Flexbox (4-6h, średnie ryzyko).
+  - **@trendmicro/react-\*** (22 paczek, ~36 KB brotli w `vendor.trendmicro`) — audit przez `grep -r "@trendmicro/react-X" src/app/`: zachować Modal/Dropdown/Tooltip/Loader/Checkbox/Radio (najczęsciej), wyrzucić Table/Paginations/Validation/DatePicker/Interpolate (używane w Legacy Settings — można zastąpić simple HTML). 1-3h iteracji, realnie 10-15 KB brotli.
+
 Po P5.1 (Service Worker):
 - `dist/cncjs/app/sw.js`: **24 KB raw / 7.4 KB brotli** (self-contained, workbox 6.6.1 inlined)
 - Initial bundle (JS + CSS) bez zmian — SW jest dodatkowym plikiem rejestrowanym po `load`, nie wpływa na render path pierwszego loadu.
@@ -180,7 +203,7 @@ Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i pa
 9. ~~**P5.1** — Service Worker (workbox).~~ **Zrobione 2026-05-26** — `GenerateSW` w webpack + Express `/sw.js` route + rejestracja w `index.hbs`. Drugi load <100 ms, offline shell.
 10. ~~**P1.4 Phase 2** — Selektywne importy Three.js + bump `three` ~0.103 → ~0.124.~~ **Zrobione 2026-05-27** jako higiena. 0 KB redukcji bundle (three 0.124 to single-file ESM bez sideEffects flag). Cherry-pick imports + aligned deprecated API (MathUtils, setAttribute, vertexColors: true) przygotowuje codebase pod ewentualny **Phase 3** (bump >=0.149, refactor Geometry→BufferGeometry w CoordinateAxes/GCodeVisualizer/GridLine/ProbeVisualization, Face3→indexed geom — 3-5h + manual test visualizera, real win ~30-50 KB brotli).
 11. **P4.5** — Kasacja nieużywanych endpointów serwera (auth/users/events jeśli single-user warsztat). Dla Pi Zero W warta rozważenia.
-12. **P2.6** — Audyt nakładających się stacków UI (bootstrap/react-bootstrap/styled-components/@trendmicro). Duży projekt.
+12. ~~**P2.6 Phase 1** — `styled-components` → Stylus.~~ **Zrobione 2026-05-27** (9 plików zmigrowanych, deps usunięte, −11 KB brotli initial total). Phase 2 (bootstrap + Header Navbar rewrite, @trendmicro audit) — większe projekty, NIE robione.
 13. ~~**P3.1** — PureComponent audit + stabilizacja propsów ControlDeck.~~ **Zrobione 2026-05-27** — memoize-one dla 3 getterów + PureComponent dla 7 paneli. Bundle +0.7 KB, runtime win na Pi browser (4-5 paneli rerenderuje rzadko zamiast 10 Hz). **P3.3** (virtualizacja list) — **odpada**: FilesPanel slice'uje do max 6 plików, brak listy która rośnie.
 14. **P4.4** — HTTP/2 (jeśli front przez nginx).
 

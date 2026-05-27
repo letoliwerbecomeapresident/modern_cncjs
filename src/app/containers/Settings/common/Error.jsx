@@ -1,8 +1,11 @@
-import styled from 'styled-components';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './Error.styl';
 
-const Error = styled.div`
-    display: inline-block;
-    color: #a94442;
-`;
+const Error = ({ className, children, ...rest }) => (
+  <div className={classNames(styles.error, className)} {...rest}>
+    {children}
+  </div>
+);
 
 export default Error;
