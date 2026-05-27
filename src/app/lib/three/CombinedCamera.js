@@ -8,9 +8,9 @@
  *
  */
 
-import * as THREE from 'three';
+import { Camera, MathUtils, OrthographicCamera, PerspectiveCamera } from 'three';
 
-class CombinedCamera extends THREE.Camera {
+class CombinedCamera extends Camera {
   constructor(width, height, fov, near, far, orthoNear, orthoFar) {
     super();
 
@@ -29,8 +29,8 @@ class CombinedCamera extends THREE.Camera {
     this.view = null;
     // We could also handle the projectionMatrix internally, but just wanted to test nested camera objects
 
-    this.cameraO = new THREE.OrthographicCamera(this.left, this.right, this.top, this.bottom, orthoNear, orthoFar);
-    this.cameraP = new THREE.PerspectiveCamera(fov, width / height, near, far);
+    this.cameraO = new OrthographicCamera(this.left, this.right, this.top, this.bottom, orthoNear, orthoFar);
+    this.cameraP = new PerspectiveCamera(fov, width / height, near, far);
 
     this.toPerspective();
   }
@@ -176,7 +176,7 @@ class CombinedCamera extends THREE.Camera {
     const vExtentSlope = 0.5 * filmGauge /
             (focalLength * Math.max(this.cameraP.aspect, 1));
 
-    const fov = THREE.Math.RAD2DEG * 2 * Math.atan(vExtentSlope);
+    const fov = MathUtils.RAD2DEG * 2 * Math.atan(vExtentSlope);
 
     this.setFov(fov);
 

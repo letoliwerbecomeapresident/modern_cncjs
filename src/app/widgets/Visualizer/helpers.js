@@ -1,8 +1,8 @@
-import * as THREE from 'three';
+import { Box3, TextureLoader } from 'three';
 import STLLoader from 'app/lib/three/STLLoader';
 
 const getBoundingBox = (object) => {
-  const box = new THREE.Box3().setFromObject(object);
+  const box = new Box3().setFromObject(object);
   const boundingBox = {
     min: {
       x: box.min.x === Infinity ? 0 : box.min.x,
@@ -24,7 +24,7 @@ const loadSTL = (url) => new Promise(resolve => {
 });
 
 const loadTexture = (url) => new Promise(resolve => {
-  new THREE.TextureLoader().load(url, resolve);
+  new TextureLoader().load(url, resolve);
 });
 
 export {

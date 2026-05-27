@@ -1,6 +1,6 @@
 import colornames from 'colornames';
 import pubsub from 'pubsub-js';
-import * as THREE from 'three';
+import { Color, DoubleSide, Face3, Geometry, Line, LineDashedMaterial, Mesh, MeshBasicMaterial, Object3D, Plane, PlaneGeometry, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
 import i18n from 'app/lib/i18n';
 import log from 'app/lib/log';
 import TextSprite from './TextSprite';
@@ -8,8 +8,8 @@ import { IMPERIAL_UNITS, METRIC_UNITS } from '../../constants';
 
 class ProbeVisualization {
   constructor(probeData = [], config = {}, camera = null, domElement = null, trackballControls = null, sceneUpdateCallback = null) {
-    // Create THREE.Object3D group for all visual elements
-    this.group = new THREE.Object3D();
+    // Create Object3D group for all visual elements
+    this.group = new Object3D();
     this.group.name = 'ProbeVisualization';
 
     const {
@@ -41,8 +41,8 @@ class ProbeVisualization {
     this.domElement = domElement;
     this.controls = trackballControls;
     this.sceneUpdateCallback = sceneUpdateCallback;
-    this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
+    this.raycaster = new Raycaster();
+    this.mouse = new Vector2();
     this.interactionState = 'NONE'; // NONE | DRAGGING_AREA | RESIZING_CORNER
     this.dragStartWorld = null;
     this.initialBounds = null;
@@ -108,7 +108,7 @@ class ProbeVisualization {
 
         // Color based on Z height (green = low/negative, red = high/positive)
         const normalizedZ = zRange > 0 ? (z - minZ) / zRange : 0;
-        const color = new THREE.Color();
+        const color = new Color();
         // Green for low points, yellow/orange/red for high points
         color.setHSL(0.33 - normalizedZ * 0.33, 0.8, 0.4);
 
@@ -123,17 +123,17 @@ class ProbeVisualization {
 
   drawBoundary(startX, startY, endX, endY) {
     const points = [
-      new THREE.Vector3(startX, startY, 0),
-      new THREE.Vector3(endX, startY, 0),
-      new THREE.Vector3(endX, endY, 0),
-      new THREE.Vector3(startX, endY, 0),
-      new THREE.Vector3(startX, startY, 0),
+      new Vector3(startX, startY, 0),
+      new Vector3(endX, startY, 0),
+      new Vector3(endX, endY, 0),
+      new Vector3(startX, endY, 0),
+      new Vector3(startX, startY, 0),
     ];
 
-    const geometry = new THREE.Geometry();
+    const geometry = new Geometry();
     geometry.vertices = points;
 
-    const material = new THREE.LineDashedMaterial({
+    const material = new LineDashedMaterial({
       color: colornames('brown'),
       linewidth: 2,
       dashSize: 3,
@@ -142,7 +142,7 @@ class ProbeVisualization {
       transparent: true
     });
 
-    const line = new THREE.Line(geometry, material);
+    const line = new Line(geometry, material);
     line.computeLineDistances();
     this.boundaryLine = line;
     this.group.add(line);
@@ -150,13 +150,13 @@ class ProbeVisualization {
 
   drawProbePoint(x, y, z, color) {
     // Draw small sphere at probe location
-    const geometry = new THREE.SphereGeometry(1.5, 16, 16);
-    const material = new THREE.MeshBasicMaterial({
+    const geometry = new SphereGeometry(1.5, 16, 16);
+    const material = new MeshBasicMaterial({
       color,
       opacity: 0.9,
       transparent: false
     });
-    const sphere = new THREE.Mesh(geometry, material);
+    const sphere = new Mesh(geometry, material);
     sphere.position.set(x, y, z);
     this.group.add(sphere);
   }
@@ -207,7 +207,7 @@ class ProbeVisualization {
       pointMap.set(key, point);
     });
 
-    const geometry = new THREE.Geometry();
+    const geometry = new Geometry();
     const vertexMap = new Map(); // Maps "x,y" to vertex index
 
     // Create vertices in grid order
@@ -220,7 +220,7 @@ class ProbeVisualization {
         const point = pointMap.get(key);
 
         if (point) {
-          geometry.vertices.push(new THREE.Vector3(point.x, point.y, point.z));
+          geometry.vertices.push(new Vector3(point.x, point.y, point.z));
           vertexMap.set(key, vertexIndex);
           vertexIndex++;
         }
@@ -254,18 +254,18 @@ class ProbeVisualization {
 
           const getColor = (point) => {
             const normalizedZ = zRange > 0 ? (point.z - minZ) / zRange : 0;
-            const color = new THREE.Color();
+            const color = new Color();
             color.setHSL(0.33 - normalizedZ * 0.33, 0.6, 0.5);
             return color;
           };
 
           // First triangle
-          const face1 = new THREE.Face3(i1, i2, i3);
+          const face1 = new Face3(i1, i2, i3);
           face1.vertexColors = [getColor(p1), getColor(p2), getColor(p3)];
           geometry.faces.push(face1);
 
           // Second triangle
-          const face2 = new THREE.Face3(i2, i4, i3);
+          const face2 = new Face3(i2, i4, i3);
           face2.vertexColors = [getColor(p2), getColor(p4), getColor(p3)];
           geometry.faces.push(face2);
         }
@@ -279,14 +279,14 @@ class ProbeVisualization {
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshBasicMaterial({
-      vertexColors: THREE.VertexColors,
-      side: THREE.DoubleSide,
+    const material = new MeshBasicMaterial({
+      vertexColors: true,
+      side: DoubleSide,
       opacity: 0.7,
       transparent: true,
     });
 
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new Mesh(geometry, material);
     this.group.add(mesh);
   }
 
@@ -330,14 +330,14 @@ class ProbeVisualization {
     ];
 
     cornerPositions.forEach((pos, index) => {
-      const geometry = new THREE.SphereGeometry(3, 16, 16);
-      const material = new THREE.MeshBasicMaterial({
+      const geometry = new SphereGeometry(3, 16, 16);
+      const material = new MeshBasicMaterial({
         color: colornames('orange'),
         opacity: 0.9,
         transparent: true,
         depthTest: false,
       });
-      const handle = new THREE.Mesh(geometry, material);
+      const handle = new Mesh(geometry, material);
       handle.position.set(...pos);
       handle.userData = { type: 'corner', cornerIndex: index };
       handle.name = `corner-${index}`;
@@ -353,15 +353,15 @@ class ProbeVisualization {
     const centerX = (startX + endX) / 2;
     const centerY = (startY + endY) / 2;
 
-    const planeGeometry = new THREE.PlaneGeometry(width, height);
-    const planeMaterial = new THREE.MeshBasicMaterial({
+    const planeGeometry = new PlaneGeometry(width, height);
+    const planeMaterial = new MeshBasicMaterial({
       color: 0x00ff00,
       transparent: true,
       opacity: 0, // Fully transparent but still visible for raycasting
-      side: THREE.DoubleSide,
+      side: DoubleSide,
       depthWrite: false, // Don't block objects behind it
     });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    const plane = new Mesh(planeGeometry, planeMaterial);
     plane.position.set(centerX, centerY, 0);
     plane.userData = { type: 'area' };
     plane.name = 'interaction-plane';
@@ -410,7 +410,7 @@ class ProbeVisualization {
         const { x, y, z } = point;
         const zOffset = index === 0 ? 0 : z - probeData[0].z;
         const normalizedZ = zRange > 0 ? (z - minZ) / zRange : 0;
-        const color = new THREE.Color();
+        const color = new Color();
         color.setHSL(0.33 - normalizedZ * 0.33, 0.8, 0.4);
 
         this.drawProbePoint(x, y, z, color);
@@ -594,8 +594,8 @@ class ProbeVisualization {
     // Intersect at the group's Z level so the projection is correct when the
     // camera is rotated (parallax between world Z=0 and the probe area's Z).
     const groupZ = this.group.position.z;
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -groupZ);
-    const target = new THREE.Vector3();
+    const plane = new Plane(new Vector3(0, 0, 1), -groupZ);
+    const target = new Vector3();
     return this.raycaster.ray.intersectPlane(plane, target);
   }
 
@@ -646,7 +646,7 @@ class ProbeVisualization {
 
     // Check distance to each corner in world coordinates
     for (const corner of corners) {
-      const cornerWorld = this.group.localToWorld(new THREE.Vector3(corner.x, corner.y, 0));
+      const cornerWorld = this.group.localToWorld(new Vector3(corner.x, corner.y, 0));
       const distance = Math.sqrt(
         ((worldPos.x - cornerWorld.x) ** 2) +
         ((worldPos.y - cornerWorld.y) ** 2)
@@ -662,8 +662,8 @@ class ProbeVisualization {
     }
 
     // Check if inside probe area (for drag) - convert bounds to world coords
-    const minWorld = this.group.localToWorld(new THREE.Vector3(Math.min(startX, endX), Math.min(startY, endY), 0));
-    const maxWorld = this.group.localToWorld(new THREE.Vector3(Math.max(startX, endX), Math.max(startY, endY), 0));
+    const minWorld = this.group.localToWorld(new Vector3(Math.min(startX, endX), Math.min(startY, endY), 0));
+    const maxWorld = this.group.localToWorld(new Vector3(Math.max(startX, endX), Math.max(startY, endY), 0));
 
     if (worldPos.x >= minWorld.x && worldPos.x <= maxWorld.x &&
         worldPos.y >= minWorld.y && worldPos.y <= maxWorld.y) {

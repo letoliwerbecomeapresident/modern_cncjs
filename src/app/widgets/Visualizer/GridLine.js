@@ -1,11 +1,11 @@
-import * as THREE from 'three';
+import { Color, Geometry, Line, LineBasicMaterial, Object3D, Vector3 } from 'three';
 
 class GridLine {
-    group = new THREE.Object3D();
+    group = new Object3D();
 
-    colorCenterLine = new THREE.Color(0x444444);
+    colorCenterLine = new Color(0x444444);
 
-    colorGrid = new THREE.Color(0x888888);
+    colorGrid = new Color(0x888888);
 
     // @param {number} minX  Start of grid on X axis
     // @param {number} maxX  End of grid on X axis
@@ -14,8 +14,8 @@ class GridLine {
     // @param {number} maxY  End of grid on Y axis
     // @param {number} stepY Grid spacing on Y axis
     constructor(minX, maxX, stepX, minY, maxY, stepY, colorCenterLine, colorGrid) {
-      colorCenterLine = new THREE.Color(colorCenterLine ?? this.colorCenterLine);
-      colorGrid = new THREE.Color(colorGrid ?? this.colorGrid);
+      colorCenterLine = new Color(colorCenterLine ?? this.colorCenterLine);
+      colorGrid = new Color(colorGrid ?? this.colorGrid);
 
       if (typeof minY === 'undefined') {
         minY = minX;
@@ -35,36 +35,36 @@ class GridLine {
 
       // Horizontal lines (parallel to X axis)
       for (let i = startY; i <= endY + stepY * 0.5; i += stepY) {
-        const geometry = new THREE.Geometry();
-        const material = new THREE.LineBasicMaterial({
-          vertexColors: THREE.VertexColors
+        const geometry = new Geometry();
+        const material = new LineBasicMaterial({
+          vertexColors: true
         });
         const color = (i === 0) ? colorCenterLine : colorGrid;
 
         geometry.vertices.push(
-          new THREE.Vector3(startX, i, 0),
-          new THREE.Vector3(endX, i, 0),
+          new Vector3(startX, i, 0),
+          new Vector3(endX, i, 0),
         );
         geometry.colors.push(color, color);
 
-        this.group.add(new THREE.Line(geometry, material));
+        this.group.add(new Line(geometry, material));
       }
 
       // Vertical lines (parallel to Y axis)
       for (let i = startX; i <= endX + stepX * 0.5; i += stepX) {
-        const geometry = new THREE.Geometry();
-        const material = new THREE.LineBasicMaterial({
-          vertexColors: THREE.VertexColors
+        const geometry = new Geometry();
+        const material = new LineBasicMaterial({
+          vertexColors: true
         });
         const color = (i === 0) ? colorCenterLine : colorGrid;
 
         geometry.vertices.push(
-          new THREE.Vector3(i, startY, 0),
-          new THREE.Vector3(i, endY, 0),
+          new Vector3(i, startY, 0),
+          new Vector3(i, endY, 0),
         );
         geometry.colors.push(color, color);
 
-        this.group.add(new THREE.Line(geometry, material));
+        this.group.add(new Line(geometry, material));
       }
 
       return this.group;

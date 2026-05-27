@@ -8,7 +8,21 @@ import pubsub from 'pubsub-js';
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import * as THREE from 'three';
+import {
+  AmbientLight,
+  Color,
+  DirectionalLight,
+  Group,
+  Mesh,
+  MeshLambertMaterial,
+  Object3D,
+  OrthographicCamera,
+  PCFSoftShadowMap,
+  PerspectiveCamera,
+  Scene,
+  Vector3,
+  WebGLRenderer,
+} from 'three';
 import {
   IMPERIAL_UNITS,
   METRIC_UNITS
@@ -81,7 +95,7 @@ class Visualizer extends Component {
     // make _isEqual short-circuit and leave pivotPoint at (0, 0, 0).
     machineProfile = null;
 
-    group = new THREE.Group();
+    group = new Group();
 
     probeVisualization = null;
 
@@ -608,7 +622,7 @@ class Visualizer extends Component {
       }
 
       // https://github.com/mrdoob/three.js/blob/dev/examples/js/cameras/CombinedCamera.js#L156
-      // THREE.CombinedCamera.prototype.setSize = function(width, height) {
+      // CombinedCamera.prototype.setSize = function(width, height) {
       //     this.cameraP.aspect = width / height;
       //     this.left = - width / 2;
       //     this.right = width / 2;
@@ -701,7 +715,7 @@ class Visualizer extends Component {
     createCoordinateSystem(units) {
       const { minX, maxX, minY, maxY, minZ, maxZ, gridSpacing } = this.getCoordinateBounds(units);
       const labelOffset = gridSpacing * 2;
-      const group = new THREE.Group();
+      const group = new Group();
 
       { // Coordinate Grid
         const gridLine = new GridLine(minX, maxX, gridSpacing, minY, maxY, gridSpacing, colornames('blue'), colornames('gray 44'));
@@ -758,7 +772,7 @@ class Visualizer extends Component {
       const { minX, maxX, minY, maxY, gridSpacing } = this.getCoordinateBounds(units);
       const textSize = (units === IMPERIAL_UNITS) ? (25.4 / 3) : (10 / 3);
       const textOffset = (units === IMPERIAL_UNITS) ? (25.4 / 5) : (10 / 5);
-      const group = new THREE.Group();
+      const group = new Group();
 
       // X-axis labels
       for (let x = minX; x <= maxX; x += gridSpacing) {
@@ -860,14 +874,14 @@ class Visualizer extends Component {
       const height = this.getVisibleHeight();
 
       // WebGLRenderer
-      this.renderer = new THREE.WebGLRenderer({
+      this.renderer = new WebGLRenderer({
         autoClearColor: true,
         antialias: true,
         alpha: true
       });
       this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      this.renderer.setClearColor(new THREE.Color(colornames('white')), 1);
+      this.renderer.shadowMap.type = PCFSoftShadowMap;
+      this.renderer.setClearColor(new Color(colornames('white')), 1);
       this.renderer.setPixelRatio(window.devicePixelRatio || 1);
       this.renderer.setSize(width, height);
       this.renderer.clear();
@@ -876,7 +890,7 @@ class Visualizer extends Component {
 
       // To actually be able to display anything with Three.js, we need three things:
       // A scene, a camera, and a renderer so we can render the scene with the camera.
-      this.scene = new THREE.Scene();
+      this.scene = new Scene();
 
       this.camera = this.createCombinedCamera(width, height);
       this.controls = this.createTrackballControls(this.camera, this.renderer.domElement);
@@ -899,17 +913,17 @@ class Visualizer extends Component {
         const intensity = 1;
         let light;
 
-        light = new THREE.DirectionalLight(color, intensity);
+        light = new DirectionalLight(color, intensity);
         light.position.set(-1, -1, 1);
         this.scene.add(light);
 
-        light = new THREE.DirectionalLight(color, intensity);
+        light = new DirectionalLight(color, intensity);
         light.position.set(1, -1, 1);
         this.scene.add(light);
       }
 
       { // Ambient Light
-        const light = new THREE.AmbientLight(colornames('gray 25')); // soft white light
+        const light = new AmbientLight(colornames('gray 25')); // soft white light
         this.scene.add(light);
       }
 
@@ -940,15 +954,15 @@ class Visualizer extends Component {
 
           let material;
           if (geometry.hasColors) {
-            material = new THREE.MeshLambertMaterial({
+            material = new MeshLambertMaterial({
               map: texture,
               opacity: 0.9,
               transparent: false
             });
           }
 
-          const object = new THREE.Object3D();
-          object.add(new THREE.Mesh(geometry, material));
+          const object = new Object3D();
+          object.add(new Mesh(geometry, material));
 
           this.cuttingTool = object;
           this.cuttingTool.name = 'CuttingTool';
@@ -1076,7 +1090,7 @@ class Visualizer extends Component {
       const aspect = (width > 0 && height > 0) ? Number(width) / Number(height) : 1;
       const near = PERSPECTIVE_NEAR;
       const far = PERSPECTIVE_FAR;
-      const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+      const camera = new PerspectiveCamera(fov, aspect, near, far);
 
       camera.position.x = 0;
       camera.position.y = 0;
@@ -1092,7 +1106,7 @@ class Visualizer extends Component {
       const bottom = -height / 2;
       const near = ORTHOGRAPHIC_NEAR;
       const far = ORTHOGRAPHIC_FAR;
-      const camera = new THREE.OrthographicCamera(left, right, top, bottom, near, far);
+      const camera = new OrthographicCamera(left, right, top, bottom, near, far);
 
       return camera;
     }
@@ -1246,7 +1260,7 @@ class Visualizer extends Component {
       const dX = bbox.max.x - bbox.min.x;
       const dY = bbox.max.y - bbox.min.y;
       const dZ = bbox.max.z - bbox.min.z;
-      const center = new THREE.Vector3(
+      const center = new Vector3(
         bbox.min.x + (dX / 2),
         bbox.min.y + (dY / 2),
         bbox.min.z + (dZ / 2)
@@ -1273,7 +1287,7 @@ class Visualizer extends Component {
         // The minimum viewport is 50x50mm
         const width = Math.max(dX, 50);
         const height = Math.max(dY, 50);
-        const target = new THREE.Vector3(0, 0, bbox.max.z);
+        const target = new Vector3(0, 0, bbox.max.z);
         this.viewport.set(width, height, target);
       }
 
@@ -1467,9 +1481,9 @@ class Visualizer extends Component {
 
     // deltaX and deltaY are in pixels; right and down are positive
     pan(deltaX, deltaY) {
-      const eye = new THREE.Vector3();
-      const pan = new THREE.Vector3();
-      const objectUp = new THREE.Vector3();
+      const eye = new Vector3();
+      const pan = new Vector3();
+      const objectUp = new Vector3();
 
       eye.subVectors(this.controls.object.position, this.controls.target);
       objectUp.copy(this.controls.object.up);

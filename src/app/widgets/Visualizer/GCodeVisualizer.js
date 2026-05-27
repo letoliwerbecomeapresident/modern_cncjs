@@ -1,20 +1,20 @@
 import colornames from 'colornames';
 import Toolpath from 'gcode-toolpath';
-import * as THREE from 'three';
+import { ArcCurve, Color, Geometry, Line, LineBasicMaterial, Object3D, Vector3 } from 'three';
 import log from 'app/lib/log';
 
-const defaultColor = new THREE.Color(colornames('lightgrey'));
+const defaultColor = new Color(colornames('lightgrey'));
 const motionColor = {
-  'G0': new THREE.Color(colornames('green')),
-  'G1': new THREE.Color(colornames('blue')),
-  'G2': new THREE.Color(colornames('deepskyblue')),
-  'G3': new THREE.Color(colornames('deepskyblue'))
+  'G0': new Color(colornames('green')),
+  'G1': new Color(colornames('blue')),
+  'G2': new Color(colornames('deepskyblue')),
+  'G3': new Color(colornames('deepskyblue'))
 };
 
 class GCodeVisualizer {
   constructor() {
-    this.group = new THREE.Object3D();
-    this.geometry = new THREE.Geometry();
+    this.group = new Object3D();
+    this.geometry = new Geometry();
 
     // Example
     // [
@@ -37,7 +37,7 @@ class GCodeVisualizer {
       addLine: (modal, v1, v2) => {
         const { motion } = modal;
         const color = motionColor[motion] || defaultColor;
-        this.geometry.vertices.push(new THREE.Vector3(v2.x, v2.y, v2.z));
+        this.geometry.vertices.push(new Vector3(v2.x, v2.y, v2.z));
         this.geometry.colors.push(color);
       },
       // @param {object} modal The modal object.
@@ -58,7 +58,7 @@ class GCodeVisualizer {
           endAngle += (2 * Math.PI);
         }
 
-        const arcCurve = new THREE.ArcCurve(
+        const arcCurve = new ArcCurve(
           v0.x, // aX
           v0.y, // aY
           radius, // aRadius
@@ -75,11 +75,11 @@ class GCodeVisualizer {
           const z = ((v2.z - v1.z) / points.length) * i + v1.z;
 
           if (plane === 'G17') { // XY-plane
-            this.geometry.vertices.push(new THREE.Vector3(point.x, point.y, z));
+            this.geometry.vertices.push(new Vector3(point.x, point.y, z));
           } else if (plane === 'G18') { // ZX-plane
-            this.geometry.vertices.push(new THREE.Vector3(point.y, z, point.x));
+            this.geometry.vertices.push(new Vector3(point.y, z, point.x));
           } else if (plane === 'G19') { // YZ-plane
-            this.geometry.vertices.push(new THREE.Vector3(z, point.x, point.y));
+            this.geometry.vertices.push(new Vector3(z, point.x, point.y));
           }
           this.geometry.colors.push(color);
         }
@@ -99,12 +99,12 @@ class GCodeVisualizer {
       });
     });
 
-    const workpiece = new THREE.Line(
-      new THREE.Geometry(),
-      new THREE.LineBasicMaterial({
+    const workpiece = new Line(
+      new Geometry(),
+      new LineBasicMaterial({
         color: defaultColor,
         linewidth: 1,
-        vertexColors: THREE.VertexColors,
+        vertexColors: true,
         opacity: 0.5,
         transparent: true
       })

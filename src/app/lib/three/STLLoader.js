@@ -30,11 +30,19 @@
  *  var mesh = new THREE.Mesh( geometry, material );
  */
 
-import * as THREE from 'three';
+import {
+	BufferAttribute,
+	BufferGeometry,
+	DefaultLoadingManager,
+	FileLoader,
+	Float32BufferAttribute,
+	LoaderUtils,
+	Vector3,
+} from 'three';
 
 const STLLoader = function ( manager ) {
 
-	this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 };
 
@@ -46,7 +54,7 @@ STLLoader.prototype = {
 
 		var scope = this;
 
-		var loader = new THREE.FileLoader( scope.manager );
+		var loader = new FileLoader( scope.manager );
 		loader.setPath( scope.path );
 		loader.setResponseType( 'arraybuffer' );
 		loader.load( url, function ( text ) {
@@ -164,7 +172,7 @@ STLLoader.prototype = {
 			var dataOffset = 84;
 			var faceLength = 12 * 4 + 2;
 
-			var geometry = new THREE.BufferGeometry();
+			var geometry = new BufferGeometry();
 
 			var vertices = [];
 			var normals = [];
@@ -218,12 +226,12 @@ STLLoader.prototype = {
 
 			}
 
-			geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( vertices ), 3 ) );
-			geometry.addAttribute( 'normal', new THREE.BufferAttribute( new Float32Array( normals ), 3 ) );
+			geometry.setAttribute( 'position', new BufferAttribute( new Float32Array( vertices ), 3 ) );
+			geometry.setAttribute( 'normal', new BufferAttribute( new Float32Array( normals ), 3 ) );
 
 			if ( hasColors ) {
 
-				geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( colors ), 3 ) );
+				geometry.setAttribute( 'color', new BufferAttribute( new Float32Array( colors ), 3 ) );
 				geometry.hasColors = true;
 				geometry.alpha = alpha;
 
@@ -235,7 +243,7 @@ STLLoader.prototype = {
 
 		function parseASCII( data ) {
 
-			var geometry = new THREE.BufferGeometry();
+			var geometry = new BufferGeometry();
 			var patternFace = /facet([\s\S]*?)endfacet/g;
 			var faceCounter = 0;
 
@@ -246,7 +254,7 @@ STLLoader.prototype = {
 			var vertices = [];
 			var normals = [];
 
-			var normal = new THREE.Vector3();
+			var normal = new Vector3();
 
 			var result;
 
@@ -294,8 +302,8 @@ STLLoader.prototype = {
 
 			}
 
-			geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-			geometry.addAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
+			geometry.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+			geometry.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
 
 			return geometry;
 
@@ -305,7 +313,7 @@ STLLoader.prototype = {
 
 			if ( typeof buffer !== 'string' ) {
 
-				return THREE.LoaderUtils.decodeText( new Uint8Array( buffer ) );
+				return LoaderUtils.decodeText( new Uint8Array( buffer ) );
 
 			}
 

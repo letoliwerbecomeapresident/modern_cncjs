@@ -1,9 +1,9 @@
-import * as THREE from 'three';
+import { Vector3 } from 'three';
 import log from 'app/lib/log';
 import CombinedCamera from 'app/lib/three/CombinedCamera';
 
 const FOV_MIN = 15;
-const TARGET0 = new THREE.Vector3(0, 0, 0);
+const TARGET0 = new Vector3(0, 0, 0);
 
 // http://stackoverflow.com/questions/14614252/how-to-fit-camera-to-object
 // https://github.com/mrdoob/three.js/issues/1454
@@ -73,8 +73,8 @@ class Viewport {
       } else {
         // Perspective Projection
         const { x, y, z } = this.camera.position;
-        const eye = new THREE.Vector3(x, y, z);
-        if (!(target instanceof THREE.Vector3)) {
+        const eye = new Vector3(x, y, z);
+        if (!(target instanceof Vector3)) {
           target = TARGET0;
         }
         // Find the distance from the camera to the closest face of the object

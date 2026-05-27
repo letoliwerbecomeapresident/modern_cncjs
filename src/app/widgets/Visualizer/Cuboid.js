@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineDashedMaterial, LineSegments } from 'three';
 
 class Cuboid {
   constructor(options) {
@@ -13,24 +13,24 @@ class Cuboid {
       ...others
     } = { ...options };
 
-    const geometry = new THREE.BoxGeometry(
+    const geometry = new BoxGeometry(
       dx, // width
       dy, // height
       dz, // depth
     );
-    const edges = new THREE.EdgesGeometry(geometry);
+    const edges = new EdgesGeometry(geometry);
 
     let material;
 
     if (dashed) {
-      material = new THREE.LineDashedMaterial({
+      material = new LineDashedMaterial({
         color,
         opacity,
         transparent,
         ...others
       });
     } else {
-      material = new THREE.LineBasicMaterial({
+      material = new LineBasicMaterial({
         color,
         opacity,
         transparent,
@@ -38,7 +38,7 @@ class Cuboid {
       });
     }
 
-    const lineSegments = new THREE.LineSegments(edges, material);
+    const lineSegments = new LineSegments(edges, material);
 
     if (dashed) {
       // Computes an array of distance values which are necessary for LineDashedMaterial.

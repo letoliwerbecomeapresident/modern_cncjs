@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { LinearFilter, Object3D, Sprite, SpriteMaterial, Texture } from 'three';
 
 // TextSprite
 class TextSprite {
@@ -16,7 +16,7 @@ class TextSprite {
     options = options || {};
     const { opacity = 0.6, size = 10 } = options;
 
-    const textObject = new THREE.Object3D();
+    const textObject = new Object3D();
     const textHeight = 100;
     let textWidth = 0;
 
@@ -36,11 +36,11 @@ class TextSprite {
     context.fillStyle = options.color;
     context.fillText(options.text, textWidth / 2, textHeight / 2);
 
-    const texture = new THREE.Texture(canvas);
+    const texture = new Texture(canvas);
     texture.needsUpdate = true;
-    texture.minFilter = THREE.LinearFilter;
+    texture.minFilter = LinearFilter;
 
-    const material = new THREE.SpriteMaterial({
+    const material = new SpriteMaterial({
       map: texture,
       transparent: true,
       opacity: opacity
@@ -70,7 +70,7 @@ class TextSprite {
     // Position Z
     textObject.position.z = options.z || 0;
 
-    const sprite = new THREE.Sprite(material);
+    const sprite = new Sprite(material);
     sprite.scale.set(textWidth / textHeight * size, size, 1);
 
     textObject.add(sprite);

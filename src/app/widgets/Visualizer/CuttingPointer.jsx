@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 
 class CuttingPointer {
   constructor(options) {
@@ -14,7 +14,7 @@ class CuttingPointer {
     } = { ...options };
     const radius = Number(diameter / 2) || 1;
 
-    const geometry = new THREE.SphereGeometry(
+    const geometry = new SphereGeometry(
       radius,
       widthSegments,
       heightSegments,
@@ -23,11 +23,11 @@ class CuttingPointer {
       thetaStart,
       thetaLength
     );
-    const material = new THREE.MeshBasicMaterial({
+    const material = new MeshBasicMaterial({
       color: color
     });
 
-    return new THREE.Mesh(geometry, material);
+    return new Mesh(geometry, material);
   }
 }
 
