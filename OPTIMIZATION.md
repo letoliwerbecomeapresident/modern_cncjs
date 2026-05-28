@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-27, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1)
+## Status realizacji (ostatnia aktualizacja: 2026-05-28, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -54,6 +54,18 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
   - **widgets/Visualizer/SecondaryToolbar.jsx**: `const IconButton = styled(Button)` (50 linii CSS — filter, hover states, highlight modifier) → functional wrapper `({ className, children, ...rest }) => <Button className={cx(styles.iconButton, className)} {...rest} />`. Nowy plik `widgets/Visualizer/secondary-toolbar.styl`. Klasa `.highlight` używana w 5 miejscach (cameraPosition top/front/right/left/3d) — `cx({ 'highlight': ... })` → `cx({ [styles.highlight]: ... })` żeby CSS Modules mangling pasował do nested selektora `&.highlight` w styl.
   - `yarn remove styled-components` usunęło też transitive: `css-to-react-native`, `postcss-value-parser`, `stylis`, `stylis-rule-sheet`, `supports-color@3.2.3`. Suma `~12 KB brotli` z `vendor.misc` (159 → 147 KB), plus eliminacja runtime CSS-in-JS parser (~12 KB szacowane na hot path renderów ControlDeck — ale Header/SecondaryToolbar też z tego korzystają, choć rzadziej rerenderują).
   - Pre-existing 1 ESLint error w `ControlDeck.jsx:812` (nested ternary, z commitu P3.1) — nie nasza zmiana, hook przepuszcza. Po naszym refactorze: −9 errorów `import/no-unresolved 'styled-components'` (z 10 do 1).
+- **P4.5** — Kasacja 4 dead endpointów serwera + 1 dead GET handler. Po cleanupie P1.3 (kasacja 14 klasycznych widgetów) widgety Custom/Macro/Tool nie wywołują już swoich CRUD API. Audyt frontu (`grep -rn "api\.<endpoint>"`) potwierdził zero konsumentów. Usunięte:
+  - **`src/server/api/api.mdi.js`** (238 linii) — Custom widget skasowany w P1.3. 6 routes (`GET/POST/PUT /api/mdi`, `GET/PUT/DELETE /api/mdi/:id`).
+  - **`src/server/api/api.macros.js`** (202 linie) — Macro widget skasowany. 5 routes (`GET/POST /api/macros`, `GET/PUT/DELETE /api/macros/:id`).
+  - **`src/server/api/api.tool.js`** (55 linii) — Tool widget skasowany. 2 routes (`GET/POST /api/tool`).
+  - **`src/server/api/api.controllers.js`** (16 linii) — `GET /api/controllers` (lista podłączonych portów) zero użyć w froncie — kontrolery są zarządzane przez Socket.IO events (`controller:connect`/`disconnect`/`state`), nie REST polling. 1 route.
+  - **`api.gcode.fetch`** w `api.gcode.js` (25 linii) — `GET /api/gcode?port=<x>` zwracający `sender.toJSON()` był używany przez klasyczny widget GCode (skasowany). Frontend wciąż dostaje stan sendera przez Socket.IO `sender:status` event. POST upload + GET/POST download zostają (używane przez ControlDeck FilesPanel + Visualizer Dashboard).
+  - **`src/app/api/index.js`** — usunięte funkcje: `getToolConfig`, `setToolConfig`, `fetchGCode`, `controllers.get`, `macros.*` (5 fn), `mdi.*` (6 fn). Default export odchudzony o klucze `controllers`, `macros`, `mdi`, `getToolConfig`/`setToolConfig`/`fetchGCode`.
+  - **`src/server/api/index.js`** — usunięte importy/eksporty `controllers`, `macros`, `mdi`, `tool`.
+  - **`src/server/app.js`** — usunięte 15 route registrations (6 mdi + 5 macros + 2 tool + 1 controllers + 1 gcode GET).
+  - **Pre-existing config:** dla single-user warsztatu `api.users` zostaje (Settings UI używa, lib/user.js signin flow), `api.events`/`api.machines`/`api.commands` zostają (Settings używa, Header używa commands keyboard shortcuts). Dla pełnego single-user można w przyszłości jeszcze wyrzucić Settings panel User Accounts, ale to wymagałoby refaktoru `lib/user.js` + Settings.jsx — out of scope tej iteracji.
+  - **Runtime impact (Pi Zero W jako boot-critical target):** ~511 linii kodu serwerowego mniej. Mniej parsed modules przy boot = mniej RAM (`mdi.js` i `macros.js` ciągnęły `uuid`, `ensure-type`, `lodash/find`, `lodash/isPlainObject`, `lodash/castArray` przez resolved-but-shared moduły; resolved instances pozostają w cache modułów Node — efekt rzędu setek KB heapu zwolnionych). Mniejsza powierzchnia ataku (15 publicznych endpoints REST mniej).
+  - **Bundle frontowy:** `main.bundle.js` raw 433 KB → 430 KB (−3 KB, ~7 funkcji `new Promise` + ich superagent boilerplate). `main.bundle.js` brotli **46952** B (vs ~46000 oczekiwanego po P2.6 Phase 1 — wcześniejszy szacunek był nieco optymistyczny; faktyczny stan po P2.6 Phase 1 musiał być rzędu 49 KB, po P4.5 frontowo bez znaczenia, bo dead code był już prawie nie używany — większość redukcji to dead funkcje frontowe które nie były nigdzie wywoływane, więc Terser je tree-shake'ował).
 - **P1.4 Phase 2** — Bump `three` ~0.103.0 → ~0.124.0 + cherry-pick imports w 13 plikach + lokalne forki w `src/app/lib/three/`. Zmiany API:
   - `CombinedCamera.js`: `THREE.Math.RAD2DEG` → `MathUtils.RAD2DEG` (przemianowane w r113)
   - `STLLoader.js`: `geometry.addAttribute()` → `geometry.setAttribute()` (przemianowane w r123)
@@ -162,6 +174,15 @@ Po P1.4 Phase 2 (cherry-pick Three.js + bump 0.103 → 0.124):
 - `dist/cncjs/app/` total: bez zmiany istotnej.
 - **Wniosek:** Phase 2 to higiena + przygotowanie. Realny KB win wymaga Phase 3 (>=0.149 z sideEffects: false + Geometry/Face3 refactor) — NIE wykonane, decyzja na osobny slot.
 
+Po P4.5 (kasacja dead endpointów serwera):
+- `main.bundle.js` brotli: **46952 B** (frontowy delta zerowa względem P2.6 Phase 1 — usunięte funkcje API były dead code'em w sense konsumentów; jeśli Terser by je wcześniej tree-shake'ował, brotli już je nie zawierał).
+- Frontowy initial bundle: **bez zmiany istotnej** — to czysty runtime/serverside win.
+- **Runtime serwera (Pi Zero W):**
+  - 4 moduły mniej parsowane przy boot (~511 linii Express handlerów + ich resolved deps)
+  - 15 routes mniej zarejestrowanych w Express stack (lookup table mniejsza, marginalnie szybszy routing)
+  - Mniejsza powierzchnia ataku (zero publicznych endpoints dla mdi/macros/tool/controllers + dead GET /api/gcode)
+- **Wpływ na cnc.json (config persistence):** stare wartości `cnc.config.mdi[]`, `cnc.config.macros[]`, `cnc.config.tool{}` zostają w pliku użytkownika ale nie są już odczytywane/modyfikowane. Brak migracji wymaganej — to forks-only, brak release'u dla istniejących użytkowników. Nowa instalacja nie zapisze tych kluczy w ogóle.
+
 Po P2.6 Phase 1 (styled-components → Stylus):
 - `vendor.misc` brotli: **159 → 147 KB (−12 KB)** — usunięcie styled-components 3.4.9 (CSS-in-JS parser, stylis, postcss-value-parser, css-to-react-native, supports-color@3.2.3).
 - `main.bundle.js` brotli: 50821 → ~46000 (−5 KB) — usunięcie 9 importów `styled` + inline definicji styled-components (Header `MenuItemLink`, SecondaryToolbar `IconButton` z 50 linii CSS w template literal).
@@ -202,7 +223,7 @@ Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i pa
 8. ~~**P2.4** — Font Awesome subset.~~ **Zrobione 2026-05-26** (alternatywą do subsettingu: skip nieużywanych formatów przez `css-loader` `url:` filter). dist/ −1.1 MB. Initial bundle bez zmian.
 9. ~~**P5.1** — Service Worker (workbox).~~ **Zrobione 2026-05-26** — `GenerateSW` w webpack + Express `/sw.js` route + rejestracja w `index.hbs`. Drugi load <100 ms, offline shell.
 10. ~~**P1.4 Phase 2** — Selektywne importy Three.js + bump `three` ~0.103 → ~0.124.~~ **Zrobione 2026-05-27** jako higiena. 0 KB redukcji bundle (three 0.124 to single-file ESM bez sideEffects flag). Cherry-pick imports + aligned deprecated API (MathUtils, setAttribute, vertexColors: true) przygotowuje codebase pod ewentualny **Phase 3** (bump >=0.149, refactor Geometry→BufferGeometry w CoordinateAxes/GCodeVisualizer/GridLine/ProbeVisualization, Face3→indexed geom — 3-5h + manual test visualizera, real win ~30-50 KB brotli).
-11. **P4.5** — Kasacja nieużywanych endpointów serwera (auth/users/events jeśli single-user warsztat). Dla Pi Zero W warta rozważenia.
+11. ~~**P4.5** — Kasacja nieużywanych endpointów serwera.~~ **Zrobione 2026-05-28** — usunięte mdi/macros/tool/controllers handlery + GET /api/gcode (zero konsumentów po cleanupie P1.3). ~511 linii kodu serwerowego mniej, 15 routes mniej. users/events/commands/machines zostają (Settings UI je używa).
 12. ~~**P2.6 Phase 1** — `styled-components` → Stylus.~~ **Zrobione 2026-05-27** (9 plików zmigrowanych, deps usunięte, −11 KB brotli initial total). Phase 2 (bootstrap + Header Navbar rewrite, @trendmicro audit) — większe projekty, NIE robione.
 13. ~~**P3.1** — PureComponent audit + stabilizacja propsów ControlDeck.~~ **Zrobione 2026-05-27** — memoize-one dla 3 getterów + PureComponent dla 7 paneli. Bundle +0.7 KB, runtime win na Pi browser (4-5 paneli rerenderuje rzadko zamiast 10 Hz). **P3.3** (virtualizacja list) — **odpada**: FilesPanel slice'uje do max 6 plików, brak listy która rośnie.
 14. **P4.4** — HTTP/2 (jeśli front przez nginx).

@@ -42,32 +42,6 @@ export const upload = (req, res) => {
   });
 };
 
-export const fetch = (req, res) => {
-  const port = req.query.port;
-
-  if (!port) {
-    res.status(ERR_BAD_REQUEST).send({
-      msg: 'No port specified'
-    });
-    return;
-  }
-
-  const controller = store.get('controllers["' + port + '"]');
-  if (!controller) {
-    res.status(ERR_BAD_REQUEST).send({
-      msg: 'Controller not found'
-    });
-    return;
-  }
-
-  const { sender } = controller;
-
-  res.send({
-    ...sender.toJSON(),
-    data: sender.state.gcode
-  });
-};
-
 export const download = (req, res) => {
   const port = get(req, 'query.port') || get(req, 'body.port');
 

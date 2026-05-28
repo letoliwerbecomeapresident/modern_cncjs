@@ -109,35 +109,6 @@ const unsetState = (options) => new Promise((resolve, reject) => {
 });
 
 //
-// Tool Config
-//
-const getToolConfig = (options) => new Promise((resolve, reject) => {
-  authrequest
-    .get('/api/tool')
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-const setToolConfig = (options) => new Promise((resolve, reject) => {
-  const data = { ...options };
-  authrequest
-    .post('/api/tool')
-    .send(data)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-//
 // G-code
 //
 const loadGCode = (options) => new Promise((resolve, reject) => {
@@ -146,21 +117,6 @@ const loadGCode = (options) => new Promise((resolve, reject) => {
   authrequest
     .post('/api/gcode')
     .send({ port, name, gcode, context })
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-const fetchGCode = (options) => new Promise((resolve, reject) => {
-  const { port = '' } = { ...options };
-
-  authrequest
-    .get('/api/gcode')
-    .query({ port: port })
     .end((err, res) => {
       if (err) {
         reject(res);
@@ -194,23 +150,6 @@ const downloadGCode = (options) => {
   $form.submit();
   document.body.removeChild($form);
 };
-
-//
-// Controllers
-//
-const controllers = {};
-
-controllers.get = () => new Promise((resolve, reject) => {
-  authrequest
-    .get('/api/controllers')
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
 
 //
 // Watch Directory
@@ -374,155 +313,6 @@ events.update = (id, options) => new Promise((resolve, reject) => {
   authrequest
     .put('/api/events/' + id)
     .send(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-//
-// Macros
-//
-const macros = {};
-
-macros.fetch = (options) => new Promise((resolve, reject) => {
-  authrequest
-    .get('/api/macros')
-    .query(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-macros.create = (options) => new Promise((resolve, reject) => {
-  authrequest
-    .post('/api/macros')
-    .send(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-macros.read = (id) => new Promise((resolve, reject) => {
-  authrequest
-    .get('/api/macros/' + id)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-macros.update = (id, options) => new Promise((resolve, reject) => {
-  authrequest
-    .put('/api/macros/' + id)
-    .send(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-macros.delete = (id) => new Promise((resolve, reject) => {
-  authrequest
-    .delete('/api/macros/' + id)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-//
-// MDI
-//
-const mdi = {};
-
-mdi.fetch = (options) => new Promise((resolve, reject) => {
-  authrequest
-    .get('/api/mdi')
-    .query(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-mdi.create = (options) => new Promise((resolve, reject) => {
-  authrequest
-    .post('/api/mdi')
-    .send(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-mdi.read = (id) => new Promise((resolve, reject) => {
-  authrequest
-    .get('/api/mdi/' + id)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-mdi.update = (id, options) => new Promise((resolve, reject) => {
-  authrequest
-    .put('/api/mdi/' + id)
-    .send(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-mdi.bulkUpdate = (options) => new Promise((resolve, reject) => {
-  authrequest
-    .put('/api/mdi/')
-    .send(options)
-    .end((err, res) => {
-      if (err) {
-        reject(res);
-      } else {
-        resolve(res);
-      }
-    });
-});
-
-mdi.delete = (id) => new Promise((resolve, reject) => {
-  authrequest
-    .delete('/api/mdi/' + id)
     .end((err, res) => {
       if (err) {
         reject(res);
@@ -700,20 +490,12 @@ export default {
   setState,
   unsetState,
 
-  // Tool
-  getToolConfig,
-  setToolConfig,
-
   // G-code
   loadGCode,
-  fetchGCode,
   downloadGCode,
 
   // Authentication
   signin,
-
-  // Controllers
-  controllers,
 
   // Watch Directory
   watch,
@@ -722,7 +504,5 @@ export default {
   commands,
   events,
   machines,
-  macros,
-  mdi,
   users,
 };

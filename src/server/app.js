@@ -284,18 +284,10 @@ const appMain = () => {
     app.post(urljoin(settings.route, 'api/state'), api.state.set);
     app.delete(urljoin(settings.route, 'api/state'), api.state.unset);
 
-    // Tool Config
-    app.get(urljoin(settings.route, 'api/tool'), api.tool.get);
-    app.post(urljoin(settings.route, 'api/tool'), api.tool.set);
-
     // G-code
-    app.get(urljoin(settings.route, 'api/gcode'), api.gcode.fetch);
     app.post(urljoin(settings.route, 'api/gcode'), api.gcode.upload);
     app.get(urljoin(settings.route, 'api/gcode/download'), api.gcode.download);
     app.post(urljoin(settings.route, 'api/gcode/download'), api.gcode.download); // Alias
-
-    // Controllers
-    app.get(urljoin(settings.route, 'api/controllers'), api.controllers.get);
 
     // Commands
     app.get(urljoin(settings.route, 'api/commands'), api.commands.fetch);
@@ -318,21 +310,6 @@ const appMain = () => {
     app.get(urljoin(settings.route, 'api/machines/:id'), api.machines.read);
     app.put(urljoin(settings.route, 'api/machines/:id'), api.machines.update);
     app.delete(urljoin(settings.route, 'api/machines/:id'), api.machines.__delete);
-
-    // Macros
-    app.get(urljoin(settings.route, 'api/macros'), api.macros.fetch);
-    app.post(urljoin(settings.route, 'api/macros'), api.macros.create);
-    app.get(urljoin(settings.route, 'api/macros/:id'), api.macros.read);
-    app.put(urljoin(settings.route, 'api/macros/:id'), api.macros.update);
-    app.delete(urljoin(settings.route, 'api/macros/:id'), api.macros.__delete);
-
-    // MDI
-    app.get(urljoin(settings.route, 'api/mdi'), api.mdi.fetch);
-    app.post(urljoin(settings.route, 'api/mdi'), api.mdi.create);
-    app.put(urljoin(settings.route, 'api/mdi'), api.mdi.bulkUpdate);
-    app.get(urljoin(settings.route, 'api/mdi/:id'), api.mdi.read);
-    app.put(urljoin(settings.route, 'api/mdi/:id'), api.mdi.update);
-    app.delete(urljoin(settings.route, 'api/mdi/:id'), api.mdi.__delete);
 
     // Users
     app.get(urljoin(settings.route, 'api/users'), api.users.fetch);
