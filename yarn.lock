@@ -5676,7 +5676,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trendmicro/react-anchor@npm:^0.5.4, @trendmicro/react-anchor@npm:^0.5.5, @trendmicro/react-anchor@npm:^0.5.6, @trendmicro/react-anchor@npm:~0.5.6":
+"@trendmicro/react-anchor@npm:^0.5.5, @trendmicro/react-anchor@npm:^0.5.6, @trendmicro/react-anchor@npm:~0.5.6":
   version: 0.5.6
   resolution: "@trendmicro/react-anchor@npm:0.5.6"
   dependencies:
@@ -5722,21 +5722,6 @@ __metadata:
   peerDependencies:
     react: ^0.14.0 || >=15.0.0
   checksum: 9cf9a02d54bcc5ea395a4a4ff3a5986c90a7fa6feea2814dee1ce486c031a0173de2cd150a346ab4a1fa82dff8da4edfb9ac2d0ef9bd0c6cd565ea7b355dd027
-  languageName: node
-  linkType: hard
-
-"@trendmicro/react-datepicker@npm:~1.0.0-alpha.6":
-  version: 1.0.0-alpha.7
-  resolution: "@trendmicro/react-datepicker@npm:1.0.0-alpha.7"
-  dependencies:
-    classnames: ^2.2.5
-    prop-types: ^15.6.0
-    react-datepicker: ~1.5.0
-    uncontrollable: ^7.0.0
-  peerDependencies:
-    moment: ">=2.8.0"
-    react: ^0.14.0 || >=15.0.0
-  checksum: bd55dc8baea577bf82d0e02f48346a29dd599c3902aad5f8c31db65d263e5afb7fbb84d7bd80ca0e5a190c550342e11733cb99e84e325d3e766c8d40472dd5cf
   languageName: node
   linkType: hard
 
@@ -5813,18 +5798,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trendmicro/react-interpolate@npm:~0.5.5":
-  version: 0.5.5
-  resolution: "@trendmicro/react-interpolate@npm:0.5.5"
-  dependencies:
-    lodash.omit: ^4.5.0
-    prop-types: ^15.5.8
-  peerDependencies:
-    react: ^0.14.0 || >=15.0.0
-  checksum: d700fba1bbdbe55e61237c77b825a00fdae69fb6cfd99fb787309ca5e78eca9127996dbb900c53df7b209275fcf20ebe61e4d4a01069bcf08e50f076112abd4b
-  languageName: node
-  linkType: hard
-
 "@trendmicro/react-loader@npm:~0.6.1":
   version: 0.6.1
   resolution: "@trendmicro/react-loader@npm:0.6.1"
@@ -5878,19 +5851,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trendmicro/react-paginations@npm:~0.6.1":
-  version: 0.6.1
-  resolution: "@trendmicro/react-paginations@npm:0.6.1"
-  dependencies:
-    "@trendmicro/react-anchor": ^0.5.4
-    classnames: ^2.2.5
-    prop-types: ^15.5.8
-  peerDependencies:
-    react: ^0.14.0 || >=15.0.0
-  checksum: 4836c2b321d341b229b4177680d34cc9ffab0e79c3b317d42d47133fc0443cf4d189d9800612ef4f44626310222f25c3a70a8202b6b73b68c87112e42e25eb5b
-  languageName: node
-  linkType: hard
-
 "@trendmicro/react-popover@npm:~0.4.0":
   version: 0.4.0
   resolution: "@trendmicro/react-popover@npm:0.4.0"
@@ -5927,25 +5887,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trendmicro/react-table@npm:~1.0.1-alpha.2":
-  version: 1.0.1-alpha.2
-  resolution: "@trendmicro/react-table@npm:1.0.1-alpha.2"
-  dependencies:
-    "@trendmicro/react-anchor": ^0.5.5
-    classnames: ^2.2.5
-    element-resize-detector: ^1.1.12
-    ensure-array: ^1.0.0
-    lodash.debounce: ^4.0.8
-    lodash.get: ^4.4.2
-    mini-store: ^1.1.0
-    prop-types: ^15.5.8
-    trendmicro-ui: ^0.4.0
-  peerDependencies:
-    react: ">=15.0.0"
-  checksum: 4153bf8c994b44d1c7c8f98451d008058c50a5c3c10f8b0f570259e02ff131f2f883fce4cb3f721135deabd374463471f1a03bc3149c9c80df787f6909fa19cd
-  languageName: node
-  linkType: hard
-
 "@trendmicro/react-toggle-switch@npm:~0.5.7":
   version: 0.5.7
   resolution: "@trendmicro/react-toggle-switch@npm:0.5.7"
@@ -5969,17 +5910,6 @@ __metadata:
   peerDependencies:
     react: ^0.14.0 || >=15.0.0
   checksum: 84ec49a38778a0f47504be49a02aaa0f34f183b0fbe89c375efc3c07dcf10767aafffb95d274bcc271128fb4c58474e0fe01824ed2c6376aff0742515dce9a0b
-  languageName: node
-  linkType: hard
-
-"@trendmicro/react-validation@npm:~0.1.0":
-  version: 0.1.0
-  resolution: "@trendmicro/react-validation@npm:0.1.0"
-  dependencies:
-    prop-types: ^15.6.0
-  peerDependencies:
-    react: ^0.14.0 || >=15.0.0
-  checksum: 982aa63b2bb9a700f5564fa6b67b10ba861acd6e41335147ee628ad29f34e9a8cae5c528da2cb222b1faec951fccd364fbd88c4b06919f348b8ed2bb6c012099
   languageName: node
   linkType: hard
 
@@ -8315,13 +8245,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"batch-processor@npm:1.0.0":
-  version: 1.0.0
-  resolution: "batch-processor@npm:1.0.0"
-  checksum: 5519b024f6cd0e95a543bb3edf0ae19e5badae0c32b30b41839b4469bbb1f91e14fc04bff3759cd9c2621aa9e16def48c938783e9027e7ec977fba62d537a468
-  languageName: node
-  linkType: hard
-
 "batch@npm:0.6.1":
   version: 0.6.1
   resolution: "batch@npm:0.6.1"
@@ -9523,24 +9446,19 @@ __metadata:
     "@trendmicro/react-breadcrumbs": ~0.5.5
     "@trendmicro/react-buttons": ~1.3.1
     "@trendmicro/react-checkbox": ~3.4.1
-    "@trendmicro/react-datepicker": ~1.0.0-alpha.6
     "@trendmicro/react-dropdown": ~1.3.0
     "@trendmicro/react-form-control": ~0.1.0
     "@trendmicro/react-grid-system": ~0.2.0
     "@trendmicro/react-iframe": ~0.3.1
-    "@trendmicro/react-interpolate": ~0.5.5
     "@trendmicro/react-loader": ~0.6.1
     "@trendmicro/react-modal": ~2.2.2
     "@trendmicro/react-navs": ~0.11.6
     "@trendmicro/react-notifications": ~1.0.1
-    "@trendmicro/react-paginations": ~0.6.1
     "@trendmicro/react-popover": ~0.4.0
     "@trendmicro/react-portal": ~0.4.3
     "@trendmicro/react-radio": ~3.2.2
-    "@trendmicro/react-table": ~1.0.1-alpha.2
     "@trendmicro/react-toggle-switch": ~0.5.7
     "@trendmicro/react-tooltip": ~0.6.0
-    "@trendmicro/react-validation": ~0.1.0
     babel-core: ~7.0.0-bridge.0
     babel-eslint: ~10.0.1
     babel-loader: ~8.0.5
@@ -11693,15 +11611,6 @@ __metadata:
   version: 0.2.2
   resolution: "element-class@npm:0.2.2"
   checksum: fbce1af9e027dd9b7cdf22ba0761359564a178eab66954210a86ef153582a26ef2d9617e5240e977b521abf7076ff5e63721010c9024482a2a73c7e5a9d5c6fe
-  languageName: node
-  linkType: hard
-
-"element-resize-detector@npm:^1.1.12":
-  version: 1.2.4
-  resolution: "element-resize-detector@npm:1.2.4"
-  dependencies:
-    batch-processor: 1.0.0
-  checksum: 81c47b7e229c303889d3a9d78ec3f3232e88a6682f1e2424fb0632d9b4f503b2ca011e6954321060604da07749a5a972b6a175fdf6c6806093a3b80a304cde7b
   languageName: node
   linkType: hard
 
@@ -17773,13 +17682,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash.get@npm:^4.4.2":
-  version: 4.4.2
-  resolution: "lodash.get@npm:4.4.2"
-  checksum: e403047ddb03181c9d0e92df9556570e2b67e0f0a930fcbbbd779370972368f5568e914f913e93f3b08f6d492abc71e14d4e9b7a18916c31fa04bd2306efe545
-  languageName: node
-  linkType: hard
-
 "lodash.includes@npm:^4.3.0":
   version: 4.3.0
   resolution: "lodash.includes@npm:4.3.0"
@@ -17833,13 +17735,6 @@ __metadata:
   version: 4.6.2
   resolution: "lodash.merge@npm:4.6.2"
   checksum: ad580b4bdbb7ca1f7abf7e1bce63a9a0b98e370cf40194b03380a46b4ed799c9573029599caebc1b14e3f24b111aef72b96674a56cfa105e0f5ac70546cdc005
-  languageName: node
-  linkType: hard
-
-"lodash.omit@npm:^4.5.0":
-  version: 4.5.0
-  resolution: "lodash.omit@npm:4.5.0"
-  checksum: 434645e49fe84ab315719bd5a9a3a585a0f624aa4160bc09157dd041a414bcc287c15840365c1379476a3f3eda41fbe838976c3f7bdecbbf4c5478e86c471a30
   languageName: node
   linkType: hard
 
@@ -18469,18 +18364,6 @@ __metadata:
   peerDependencies:
     webpack: ^5.0.0
   checksum: ae192c67ba85ac8bffeab66774635bf90181f00d5dd6cf95412426192599ddf5506fb4b1550acbd7a5476476e39db53c770dd40f8378f7baf5de96e3fec4e6e9
-  languageName: node
-  linkType: hard
-
-"mini-store@npm:^1.1.0":
-  version: 1.1.2
-  resolution: "mini-store@npm:1.1.2"
-  dependencies:
-    hoist-non-react-statics: ^2.3.1
-    prop-types: ^15.6.0
-    react-lifecycles-compat: ^3.0.4
-    shallowequal: ^1.0.2
-  checksum: 1a7e5bc575dfaa53ed5cb898ccd7f265397520334eeebbbb408075e785ecdca771186ab7f5a23a1459cad769d9c60d08724c16b16b2391feb98737b6615d265f
   languageName: node
   linkType: hard
 
@@ -20255,13 +20138,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"popper.js@npm:^1.14.1":
-  version: 1.16.1
-  resolution: "popper.js@npm:1.16.1"
-  checksum: c56ae5001ec50a77ee297a8061a0221d99d25c7348d2e6bcd3e45a0d0f32a1fd81bca29d46cb0d4bdf13efb77685bd6a0ce93f9eb3c608311a461f945fffedbe
-  languageName: node
-  linkType: hard
-
 "posix-character-classes@npm:^0.1.0":
   version: 0.1.1
   resolution: "posix-character-classes@npm:0.1.1"
@@ -21264,22 +21140,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-datepicker@npm:~1.5.0":
-  version: 1.5.0
-  resolution: "react-datepicker@npm:1.5.0"
-  dependencies:
-    classnames: ^2.2.5
-    prop-types: ^15.6.0
-    react-onclickoutside: ^6.7.1
-    react-popper: ^0.9.1
-  peerDependencies:
-    moment: ^2.20.0
-    react: ^16.0.0
-    react-dom: ^16.0.0
-  checksum: c040ca88be52fc7afa3d1dcc08cb0bf003e4396a17103f21be49a057931298c41983a5a37f2a3e4170551bbeb847e19ccbcd115a1e93a1a42911dec2317cd9fd
-  languageName: node
-  linkType: hard
-
 "react-dom@npm:~15.6.2":
   version: 15.6.2
   resolution: "react-dom@npm:15.6.2"
@@ -21421,16 +21281,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-onclickoutside@npm:^6.7.1":
-  version: 6.12.2
-  resolution: "react-onclickoutside@npm:6.12.2"
-  peerDependencies:
-    react: ^15.5.x || ^16.x || ^17.x || ^18.x
-    react-dom: ^15.5.x || ^16.x || ^17.x || ^18.x
-  checksum: a0c7f4fbcf84e00d50b3fc18208e5fdc4e97b17daf910f176659e079038a560d2e299955804d20e6ca2bf375404d03fdb865dc7f5f85cab3e60b493be4375e77
-  languageName: node
-  linkType: hard
-
 "react-overlays@npm:^0.8.0":
   version: 0.8.3
   resolution: "react-overlays@npm:0.8.3"
@@ -21445,19 +21295,6 @@ __metadata:
     react: ^0.14.9 || >=15.3.0
     react-dom: ^0.14.9 || >=15.3.0
   checksum: bcef5c6fe431dd70a46d71f8b3e486113fb3c211453cbeba9b36b3df5d7dba19fd23567505c8a8f8d3137d9aea80bc95ca0b8003666d47f29ce78ab140648dda
-  languageName: node
-  linkType: hard
-
-"react-popper@npm:^0.9.1":
-  version: 0.9.5
-  resolution: "react-popper@npm:0.9.5"
-  dependencies:
-    popper.js: ^1.14.1
-    prop-types: ^15.6.1
-  peerDependencies:
-    react: 0.14.x || ^15.0.0 || ^16.0.0
-    react-dom: 0.14.x || ^15.0.0 || ^16.0.0
-  checksum: a0a08ec97c7fb1ca238d943a12d59d693201e4a7a83356d86d87e80512dd631e9939bf75f1531e177a7b5639083bca9fcf9ce583da680cb65aa7cf63582e190d
   languageName: node
   linkType: hard
 
@@ -24976,13 +24813,6 @@ __metadata:
   bin:
     tree-kill: cli.js
   checksum: 49117f5f410d19c84b0464d29afb9642c863bc5ba40fcb9a245d474c6d5cc64d1b177a6e6713129eb346b40aebb9d4631d967517f9fbe8251c35b21b13cd96c7
-  languageName: node
-  linkType: hard
-
-"trendmicro-ui@npm:^0.4.0":
-  version: 0.4.4
-  resolution: "trendmicro-ui@npm:0.4.4"
-  checksum: 6d34ec8354563fda12f795ae0ea7e3714820ef7854cda03fac3ce0e1d31f5c57860003f7486109e30477753dc13aeb21627fd93b5ab9142523a8c0f866afc65a
   languageName: node
   linkType: hard
 

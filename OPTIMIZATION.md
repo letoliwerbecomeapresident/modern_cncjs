@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-29, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5 + P1.2)
+## Status realizacji (ostatnia aktualizacja: 2026-05-29, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5 + P1.2 + P2.6 Phase 2 @trendmicro audit)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -82,6 +82,12 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 - **P5.2** — `immutable: true` w `serveStatic` opcjach (`src/server/app.js`).
 - **P6.1** — `webpack-bundle-analyzer` pod flagą `ANALYZE=1 yarn build` → raport `dist/cncjs/bundle-report.html`. Dodane devDep: `webpack-bundle-analyzer`.
 - **P1.2** — Lazy-load `containers/Settings/` (cała sekcja konfigów) przez nowy `containers/LazySettings.jsx` z dynamic `import(/* webpackChunkName: "settings" */ './Settings')`. React 15.6 — ręczny class wrapper (wzorzec z `LazyVisualizerPanel`). `App.jsx`: `import Settings from './Settings'` → `from './LazySettings'`. Settings renderowany tylko gdy `location.pathname` zaczyna się od `/settings` (już warunkowy w App.jsx), więc lazy-load nie zmienia UX — placeholder `Loading...` (istniejący klucz i18n) wyświetla się ułamek sekundy przy pierwszym wejściu w Settings. `Settings.jsx` (1268 linii) ciągnął synchronicznie 8 podsekcji (General/Workspace/MachineProfiles/UserAccounts/Controller/Commands/Events/About) do initial bundle — teraz w osobnym async chunku `settings.<hash>.bundle.js` (164 KB raw / **16 KB brotli**, precompresowany br/gz). `Settings/index.js` re-eksport zostaje (martwy, ale nieszkodliwy — nikt już nie importuje). Audyt `grep`: zero innych synchronicznych importów `containers/Settings` poza wrapperem.
+- **P2.6 Phase 2 (@trendmicro audit)** — usunięte 5 paczek `@trendmicro/react-*` (+ tranzytywne) z deps, zastąpione lokalnymi reimplementacjami zachowującymi publiczne API (konsumenci bez zmian). Dwa dead-code'y skasowane, trzy komponenty zreimplementowane:
+  - **Dead code skasowany:** `src/app/components/DatePicker/` (4 pliki: index.js + DateTimeRangePicker + DateTimeRangePickerDropdown) i `src/app/components/Interpolate/` — **zero konsumentów** w `src/app/` (audyt `grep`). Usunięte deps: `@trendmicro/react-datepicker`, `@trendmicro/react-interpolate` (+ tranzytywne `react-datepicker`, `react-onclickoutside`, `react-popper`, `popper.js`, `mini-store`, `trendmicro-ui`).
+  - **`components/Validation`** — `@trendmicro/react-validation` (Form/Input/Select/Textarea + createForm/createFormControl) → lokalna wierna reimplementacja w 3 plikach (`Form.js` — provider z legacy-context `$validation`, register/setProps/getProps/invalidate/validate/getValues; `index.js` — `FormControl` HOC-class + `Input`/`Select`/`Textarea` wrappery przez `React.createElement(element)`; `context.js` — współdzielone `childContextTypes`). Zachowany kontrakt walidacji `(value, props, components)` → node|null (potrzebny przez `lib/validations.jsx` `required`/`password` z trackingiem `blurred`/`changed` i grupowaniem radio per `name`). `createForm`/`createFormControl` **pominięte** — nieimportowane przez żadnego z 6 konsumentów (Settings Commands/Events/UserAccounts × Create/Update). 6 konsumentów bez zmian.
+  - **`components/Table`** — `@trendmicro/react-table` → lokalny funkcyjny komponent renderujący zwykły `<table className="table">` (bootstrap CSS, obecny w `vendor.styl`). Zachowane API: `data`, `columns[{title,key,className,render(value,row,index)}]`, `rowKey` (fn|string), `title` (fn → toolbar nad tabelą), `emptyText` (fn), `bordered`, `justified` (→ `table-layout`). Tylko płaski model kolumn — zagnieżdżone nagłówki w MachineProfiles były **zakomentowane** (nieużywane), sortowanie/fixed-header/loadery nigdzie nie używane. 4 konsumenty TableRecords bez zmian.
+  - **`components/Paginations`** — `@trendmicro/react-paginations` → samodzielny `TablePagination` (zwinięta logika `pageRecordsRenderer`/`pageLengthRenderer` z dawnego wrappera). Native `<select>` na page-length (lżejsze niż custom dropdown z open/close state + blur). Zachowane propsy konsumentów: `page`, `pageLength`, `totalRecords`, `onPageChange({page,pageLength})`, `prevPageRenderer`, `nextPageRenderer`, `style`. Nowy `index.styl` (CSS module, flex layout). Usunięte deps: `@trendmicro/react-table`, `@trendmicro/react-paginations`, `@trendmicro/react-validation`.
+  - **Zostawione `@trendmicro/react-*`** (używane initially / wielokrotnie): Modal, Dropdown, Tooltip, Loader, Checkbox, Radio, ToggleSwitch, Buttons, Anchor, Breadcrumbs, Navs, Notifications, Portal, Iframe, FormControl, GridSystem, Popover. Bootstrap CSS rewrite (Header Navbar) — **NIE robione** (większy projekt, ryzyko dla głównej nawigacji), zostaje jako pozostały kandydat Phase 2.
 - **Cleanup:** `serve-static` usunięty z obu `package.json` (zastąpiony przez `express-static-gzip`).
 
 ### 📊 Pomierzone wyniki
@@ -195,9 +201,9 @@ Po P2.6 Phase 1 (styled-components → Stylus):
 - Async chunki bez zmian (vendor.three 103 KB, visualizer 44 KB).
 - **Runtime win nie pomierzony, ale realny**: każdy render ControlDeck panelu **NIE** wykonuje już CSS-in-JS parsera. Jeden render = N styled-componentów × 1-2 ms parse (rule injection do `<style>` tagu w head). Po 10 Hz throttlingu z P3.2 i PureComponent z P3.1 to mała różnica per panel, ale kumulatywnie odciąża main thread browser. Na Pi Zero W (single-core CPU, słaby browser) eliminacja CSS-in-JS to czysty zysk.
 - **API zachowane**: wszystkie 12 konsumentów (Settings/MachineProfiles/Workspace modals/Header/SecondaryToolbar) bez zmian publicznych — komponenty dostają `className`, `children`, propagują rest props. Public surface identyczna.
-- Pozostały kandydaci do P2.6 Phase 2 (większe projekty, NIE robione):
-  - **bootstrap CSS 3.3.7** — 30 KB brotli, importowany pełen w `styles/vendor.styl`. Tylko 2 pliki (Header.jsx, Dashboard.jsx) używają `react-bootstrap` JS komponentów (`Navbar`, `Panel`, `Button`). Usunięcie wymaga rewrite'u Header Navbar w pure Stylus + Flexbox (4-6h, średnie ryzyko).
-  - **@trendmicro/react-\*** (22 paczek, ~36 KB brotli w `vendor.trendmicro`) — audit przez `grep -r "@trendmicro/react-X" src/app/`: zachować Modal/Dropdown/Tooltip/Loader/Checkbox/Radio (najczęsciej), wyrzucić Table/Paginations/Validation/DatePicker/Interpolate (używane w Legacy Settings — można zastąpić simple HTML). 1-3h iteracji, realnie 10-15 KB brotli.
+- Pozostały kandydaci do P2.6 Phase 2:
+  - **@trendmicro/react-\* audit** — ✅ **ZROBIONE 2026-05-29** (Table/Paginations/Validation lokalnie, DatePicker/Interpolate skasowane). `vendor.trendmicro` 37 → 25 KB brotli. Patrz wpis „P2.6 Phase 2 (@trendmicro audit)" wyżej.
+  - **bootstrap CSS 3.3.7** — 30 KB brotli, importowany pełen w `styles/vendor.styl`. Tylko 2 pliki (Header.jsx, Dashboard.jsx) używają `react-bootstrap` JS komponentów (`Navbar`, `Panel`, `Button`). Usunięcie wymaga rewrite'u Header Navbar w pure Stylus + Flexbox (4-6h, średnie ryzyko). **NIE robione** — zostaje jedynym kandydatem Phase 2.
 
 Po P5.1 (Service Worker):
 - `dist/cncjs/app/sw.js`: **24 KB raw / 7.4 KB brotli** (self-contained, workbox 6.6.1 inlined)
@@ -217,6 +223,15 @@ Po P1.2 (lazy-load Settings):
 - Inne chunki (vendory) bez zmian hashy.
 - Kumulatywnie vs baseline 651 KB gzip jeden chunk: initial JS brotli **~45%** (291/651).
 - **UX:** pierwszy wjazd w Settings pokazuje placeholder `Loading...` na ułamek sekundy (16 KB brotli przez LAN z Pi to natychmiastowo), kolejne — z cache SW/przeglądarki. Główna ścieżka (workspace/ControlDeck) nigdy nie ładuje kodu Settings.
+
+Po P2.6 Phase 2 (@trendmicro audit — Table/Paginations/Validation lokalnie + DatePicker/Interpolate skasowane):
+- `vendor.trendmicro` brotli: **37101 → 25346 B (−11,5 KB)** — usunięte react-table/react-paginations/react-validation/react-datepicker/react-interpolate.
+- `vendor.misc` brotli: **150762 → 145502 B (−5,1 KB)** — tranzytywne (popper.js, react-onclickoutside, react-popper, mini-store).
+- `main.bundle.js` brotli: 36278 → 36326 B (+48 B, bez znaczenia).
+- `settings.<hash>` chunk: 15945 → 18057 B (+2,1 KB) — lokalny kod Table/Paginations/Validation ląduje w async chunku Settings (jedyny konsument), nie w initial.
+- **Initial JS brotli total: ~291 → ~274 KB (−16,6 KB / −5,7%)**. Mimo że lokalny kod waży ~2 KB w settings chunku, usunięcie paczek z `vendor.trendmicro`/`vendor.misc` (które są initial — bo część @trendmicro używana initially) daje netto −16,6 KB z initial.
+- Kumulatywnie vs baseline 651 KB gzip jeden chunk: initial JS brotli **~42%** (274/651).
+- API wszystkich 10 konsumentów (6 Create/Update + 4 TableRecords) **bez zmian** — reimplementacje zachowują publiczny kontrakt. Build czysty, `yarn eslint` 0 errorów.
 
 ### ⏭️ Do zrobienia w kolejności (rekomendacja dla Pi Zero W)
 

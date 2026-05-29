@@ -1,8 +1,4 @@
 {
-  "Custom range...": "Спеціальний діапазон...",
-  "Today": "Сьогодні",
-  "Last {{n}} days": "Останні {{n}} днів",
-  "Apply": "Застосувати",
   "Cancel": "Відміна",
   "Records: {{from}} - {{to}} / {{total}}": "Записи: {{from}} - {{to}} / {{total}}",
   "Records: {{total}}": "Записи: {{total}}",
