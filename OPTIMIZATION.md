@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-29, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5 + P1.2 + P2.6 Phase 2 @trendmicro audit)
+## Status realizacji (ostatnia aktualizacja: 2026-05-29, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5 + P1.2 + P2.6 Phase 2 @trendmicro audit + P4.4 HTTP/2)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -89,6 +89,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
   - **`components/Paginations`** — `@trendmicro/react-paginations` → samodzielny `TablePagination` (zwinięta logika `pageRecordsRenderer`/`pageLengthRenderer` z dawnego wrappera). Native `<select>` na page-length (lżejsze niż custom dropdown z open/close state + blur). Zachowane propsy konsumentów: `page`, `pageLength`, `totalRecords`, `onPageChange({page,pageLength})`, `prevPageRenderer`, `nextPageRenderer`, `style`. Nowy `index.styl` (CSS module, flex layout). Usunięte deps: `@trendmicro/react-table`, `@trendmicro/react-paginations`, `@trendmicro/react-validation`.
   - **Zostawione `@trendmicro/react-*`** (używane initially / wielokrotnie): Modal, Dropdown, Tooltip, Loader, Checkbox, Radio, ToggleSwitch, Buttons, Anchor, Breadcrumbs, Navs, Notifications, Portal, Iframe, FormControl, GridSystem, Popover. Bootstrap CSS rewrite (Header Navbar) — **NIE robione** (większy projekt, ryzyko dla głównej nawigacji), zostaje jako pozostały kandydat Phase 2.
 - **Cleanup:** `serve-static` usunięty z obu `package.json` (zastąpiony przez `express-static-gzip`).
+- **P4.4** — HTTP/2 przez reverse proxy nginx udokumentowany w `deploy/raspberry-pi/README.md` (nowa sekcja „HTTP/2 (reverse proxy nginx)"). **Zero zmian w kodzie aplikacji** — Express zostaje HTTP/1.1 na `127.0.0.1:8000`, nginx terminuje TLS + HTTP/2 od przeglądarki i proxuje do upstreamu. Po split-chunks (P0.3) initial load to ~12 plików JS/CSS + async chunki — HTTP/2 multiplexuje je na jednym połączeniu zamiast serializować przez pulę 6/host HTTP/1.1. Sekcja zawiera: generowanie self-signed certu na IP Pi (LAN bez DNS), pełny server block nginx (redirect 80→443, `http2 on`, upstream z `keepalive`, `location /` proxy + `location /socket.io/` z WebSocket upgrade headers i `proxy_read_timeout 86400s` dla długo żyjącego połączenia statusu maszyny), uwagę o nie-dublowaniu kompresji (pliki już precompresowane brotli/gzip przez express-static-gzip — nginx tylko przepuszcza `Accept-Encoding`), bind cncjs do loopback (`--host 127.0.0.1`), oraz weryfikację `curl --http2` + DevTools Protocol=`h2`. **Opcjonalne** — sensowne tylko gdy stawiasz reverse proxy; goły LAN bez nginx zostaje na HTTP/1.1 + keep-alive (default Express, OK).
 
 ### 📊 Pomierzone wyniki
 
@@ -250,7 +251,7 @@ Priorytet ustawiony pod target Pi Zero W: najpierw to co odciąża transfer i pa
 11. ~~**P4.5** — Kasacja nieużywanych endpointów serwera.~~ **Zrobione 2026-05-28** — usunięte mdi/macros/tool/controllers handlery + GET /api/gcode (zero konsumentów po cleanupie P1.3). ~511 linii kodu serwerowego mniej, 15 routes mniej. users/events/commands/machines zostają (Settings UI je używa).
 12. ~~**P2.6 Phase 1** — `styled-components` → Stylus.~~ **Zrobione 2026-05-27** (9 plików zmigrowanych, deps usunięte, −11 KB brotli initial total). Phase 2 (bootstrap + Header Navbar rewrite, @trendmicro audit) — większe projekty, NIE robione.
 13. ~~**P3.1** — PureComponent audit + stabilizacja propsów ControlDeck.~~ **Zrobione 2026-05-27** — memoize-one dla 3 getterów + PureComponent dla 7 paneli. Bundle +0.7 KB, runtime win na Pi browser (4-5 paneli rerenderuje rzadko zamiast 10 Hz). **P3.3** (virtualizacja list) — **odpada**: FilesPanel slice'uje do max 6 plików, brak listy która rośnie.
-14. **P4.4** — HTTP/2 (jeśli front przez nginx).
+14. ~~**P4.4** — HTTP/2 (jeśli front przez nginx).~~ **Zrobione 2026-05-29** — sekcja „HTTP/2 (reverse proxy nginx)" w `deploy/raspberry-pi/README.md` (self-signed cert + server block z `http2 on` + WebSocket upgrade dla Socket.IO + weryfikacja). Zero zmian w kodzie. Opcjonalne — tylko gdy reverse proxy.
 
 ### ✅ Decyzje (2026-05-26)
 
