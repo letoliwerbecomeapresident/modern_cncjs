@@ -33,7 +33,7 @@ module.exports = {
       keep: (asset) => {
         const keep = [
           'assets',
-          'favicon.icon',
+          'favicon.ico',
           'i18n',
           'images',
         ].some(x => asset.startsWith(x));
