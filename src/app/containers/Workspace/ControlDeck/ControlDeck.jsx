@@ -809,9 +809,11 @@ class ControlDeck extends PureComponent {
       'idle';
     const limitPins = ['X', 'Y', 'Z', 'A'].filter(pin => String(pinState).indexOf(pin) >= 0);
     const doorOpen = String(pinState).indexOf('D') >= 0 || activeState === 'Door';
-    const coolant = (controllerType === 'TinyG') ? get(controllerState, 'sr.modal.coolant', '') :
-      (controllerType === 'Marlin') ? get(controllerState, 'modal.coolant', '') :
-        get(controllerState, 'parserstate.modal.coolant', '');
+    const coolantPathByType = {
+      TinyG: 'sr.modal.coolant',
+      Marlin: 'modal.coolant'
+    };
+    const coolant = get(controllerState, coolantPathByType[controllerType] || 'parserstate.modal.coolant', '');
     const accessoryState = get(controllerState, 'status.accessoryState', '');
     const airAssistOn = String(accessoryState).indexOf('F') >= 0 || String(coolant).indexOf('M8') >= 0;
     const temperature = get(controllerState, 'status.currentTemperature') ||
