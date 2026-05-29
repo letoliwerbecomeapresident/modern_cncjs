@@ -153,6 +153,20 @@ Zamień zadania w weryfikowalne cele:
 
 Dla zadań wieloetapowych — krótki plan z krokami i kryteriami weryfikacji.
 
-### 5. Język komunikacji
+### 5. Weryfikacja przed ukończeniem zadania — ZAWSZE sprawdź dev build
+
+**Zanim uznasz zadanie za zrobione: uruchom dev build, nie wystarczy prod `yarn build` + `yarn eslint`.** W tym projekcie prod build i CLI lint NIE łapią części błędów:
+
+- `yarn build` (prod) **nie uruchamia ESLintu** — `ESLintPlugin` został usunięty w P0.2. Czysty prod build ≠ brak błędów kompilacji frontu.
+- `yarn eslint` (CLI) używa resolvera `node`, który rozwiązuje importy `.styl`/CSS po istnieniu pliku — przepuszcza problemy widoczne tylko dla webpack resolvera (`import/no-unresolved`).
+- **Tylko dev build** odpala `ESLintPlugin` + webpack resolver i ujawnia nierozwiązane importy, błędy modułów itp. Jednorazowy sanity check:
+  ```bash
+  NODE_ENV=development npx webpack --config webpack.config.development.js 2>&1 | grep -iE "ERROR in|no-unresolved|compiled"
+  ```
+  Cel: `compiled` bez `ERROR in`. Pełna ścieżka: `yarn dev`.
+
+**Po `yarn add`/`yarn remove`:** Yarn Berry (`nodeLinker: node-modules`) przebudowuje drzewo `node_modules` (hoisting/dedup). **Działający `yarn dev` trzyma stary mapping w pamięci** → fałszywe ENOENT (np. `react-bootstrap/node_modules/uncontrollable/index.js`, który po dedup żyje już w top-level `node_modules/uncontrollable/`). Restartuj dev-server po każdej zmianie zależności; w razie potrzeby wyczyść `node_modules/.cache/eslint-webpack-plugin`.
+
+### 6. Język komunikacji
 
 Domyślnie po polsku (zgodnie z ustawieniem użytkownika). Identyfikatory w kodzie i wiadomości commitów — po angielsku.
