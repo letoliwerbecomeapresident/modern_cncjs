@@ -215,6 +215,11 @@ const appMain = () => {
       app.use(route, expressStaticGzip(asset.path, {
         enableBrotli: true,
         orderPreference: ['br', 'gz'],
+        // The default `index: 'index.html'` rewrites `req.url` from `/` to
+        // `/index.html` *before* falling through, leaving the URL mutated and
+        // preventing the `app.get('/')` template renderer below from matching.
+        // Our entry template is `index.hbs`, rendered by Hogan, not a static file.
+        index: false,
         serveStatic: {
           maxAge: asset.maxAge,
           immutable: asset.maxAge > 0,
