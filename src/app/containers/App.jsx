@@ -4,7 +4,7 @@ import { trackPage } from '../lib/analytics';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Workspace from './Workspace';
-import Settings from './Settings';
+import Settings from './LazySettings';
 import styles from './App.styl';
 
 class App extends PureComponent {

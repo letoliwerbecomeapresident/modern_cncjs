@@ -4,7 +4,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
 
 ---
 
-## Status realizacji (ostatnia aktualizacja: 2026-05-28, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5)
+## Status realizacji (ostatnia aktualizacja: 2026-05-29, P1.1 + Workspace cleanup + P1.3 + hygiene tail + P4.1/P4.2 + P3.2/P3.4 + P2.5 + P4.6 + P2.4 + P5.1 + P1.4 Phase 2 + P3.1 + P2.6 Phase 1 + P4.5 + P1.2)
 
 > **Target deployment:** Raspberry Pi **Zero W (pierwsza generacja)** — ARMv6, single-core 1 GHz, **512 MB RAM**, microSD jako dysk. To skrajny target — każdy KB JS i każdy MB RAM ma podwójną wagę. Optymalizacje runtime (P3/P4) są nie opcjonalne, lecz konieczne. Build aplikacji zawsze na laptopie (Pi Zero W nie da rady — OOM + brak ARMv6 wsparcia w Node 18+ z oficjalnych buildów).
 
@@ -81,6 +81,7 @@ Dokument opisuje konkretne zmiany do wprowadzenia, aby fork działał szybko i l
   - **Trade-off Phase 3 (NIE robione, do decyzji):** real win ~30-50 KB brotli z async vendor.three, ale 3-5h pracy + manual test visualizera + Geometry/Face3 refactor (rdzenny rendering toolpath i probe surface). Wysokie ryzyko regresji — visualizer to kluczowy user-facing feature.
 - **P5.2** — `immutable: true` w `serveStatic` opcjach (`src/server/app.js`).
 - **P6.1** — `webpack-bundle-analyzer` pod flagą `ANALYZE=1 yarn build` → raport `dist/cncjs/bundle-report.html`. Dodane devDep: `webpack-bundle-analyzer`.
+- **P1.2** — Lazy-load `containers/Settings/` (cała sekcja konfigów) przez nowy `containers/LazySettings.jsx` z dynamic `import(/* webpackChunkName: "settings" */ './Settings')`. React 15.6 — ręczny class wrapper (wzorzec z `LazyVisualizerPanel`). `App.jsx`: `import Settings from './Settings'` → `from './LazySettings'`. Settings renderowany tylko gdy `location.pathname` zaczyna się od `/settings` (już warunkowy w App.jsx), więc lazy-load nie zmienia UX — placeholder `Loading...` (istniejący klucz i18n) wyświetla się ułamek sekundy przy pierwszym wejściu w Settings. `Settings.jsx` (1268 linii) ciągnął synchronicznie 8 podsekcji (General/Workspace/MachineProfiles/UserAccounts/Controller/Commands/Events/About) do initial bundle — teraz w osobnym async chunku `settings.<hash>.bundle.js` (164 KB raw / **16 KB brotli**, precompresowany br/gz). `Settings/index.js` re-eksport zostaje (martwy, ale nieszkodliwy — nikt już nie importuje). Audyt `grep`: zero innych synchronicznych importów `containers/Settings` poza wrapperem.
 - **Cleanup:** `serve-static` usunięty z obu `package.json` (zastąpiony przez `express-static-gzip`).
 
 ### 📊 Pomierzone wyniki
@@ -208,6 +209,14 @@ Po P5.1 (Service Worker):
 - **Aktualizacje:** `skipWaiting: true` + `clientsClaim: true` → nowy SW przejmuje aktywne klienty natychmiast po install. `Cache-Control: no-cache` na `/sw.js` gwarantuje że browser re-fetcha SW przy każdej wizycie i wykryje zmianę (workbox revisions assets po hashach contenthash, więc tylko zmienione pliki re-cachowane).
 - **Trade-off:** dodatkowy devDep `workbox-webpack-plugin@^6.6.1` (Node >=16, webpack 5 compat). Build dłuższy o ~500ms (workbox precache manifest generation). `dist/` +24 KB (jeden plik sw.js).
 - **Co NIE jest cachowane:** `/api/*`, `/socket.io/*` (workbox runtime patterns nie matchują — fallthrough do network), więc realtime status maszyny zawsze świeży.
+
+Po P1.2 (lazy-load Settings):
+- `main.bundle.js` brotli: **46952 → 36278 B (−10,4 KB)** — kod Settings.jsx + 8 podsekcji przeniesiony z main do async.
+- Nowy async chunk `settings.<hash>.bundle.js`: 164 KB raw / **16 KB brotli** (ładowany dopiero przy wejściu w `/settings`).
+- Initial JS brotli total: **~301 → ~291 KB (−10 KB / −3,3%)**. Różnica między 16 KB chunka a 10 KB spadku initial = część zależności Settings (`lodash`/`react`/`@trendmicro`) jest współdzielona z initial i tam zostaje; do async poszedł tylko kod Settings-specyficzny.
+- Inne chunki (vendory) bez zmian hashy.
+- Kumulatywnie vs baseline 651 KB gzip jeden chunk: initial JS brotli **~45%** (291/651).
+- **UX:** pierwszy wjazd w Settings pokazuje placeholder `Loading...` na ułamek sekundy (16 KB brotli przez LAN z Pi to natychmiastowo), kolejne — z cache SW/przeglądarki. Główna ścieżka (workspace/ControlDeck) nigdy nie ładuje kodu Settings.
 
 ### ⏭️ Do zrobienia w kolejności (rekomendacja dla Pi Zero W)
 
